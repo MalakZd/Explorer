@@ -2,10 +2,12 @@ import { useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SearchBar from '../components/SearchBar';
 
-// Enlève les accents unicode et met en minuscule
+// les accents et miniscules
 function normalize(str: string) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
+
+//Bima t9ad backend
 
 const markers = [
   { id: 1, name: 'Casablanca', category: 'City', country: 'Morocco', coordinate: { latitude: 33.5731, longitude: -7.5898 } },
