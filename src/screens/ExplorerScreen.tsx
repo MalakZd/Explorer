@@ -7,7 +7,7 @@ function normalize(str: string) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-//Bima t9ad backend
+//Bima t9ad backend malak
 
 const markers = [
   { id: 1, name: 'Casablanca', category: 'City', country: 'Morocco', coordinate: { latitude: 33.5731, longitude: -7.5898 } },
