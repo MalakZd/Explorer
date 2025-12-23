@@ -1,12 +1,28 @@
 // ProfileScreen: User profile (unprofile)
+import { useNavigation } from "@react-navigation/native";
+import { logoutUser } from "../firebase/authService";
+
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const [showDetails, setShowDetails] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.log("Logout error:", error);
+    }
+  };
+
 
   const themed = {
     background: darkMode ? '#181A20' : '#F4F7FE',
@@ -92,7 +108,7 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: themed.logout, shadowColor: themed.logout }]}>
+      <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: themed.logout, shadowColor: themed.logout }]} onPress={handleLogout}>
         <Feather name="log-out" size={22} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>

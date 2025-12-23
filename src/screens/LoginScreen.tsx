@@ -1,4 +1,5 @@
 
+import { loginUser } from "../firebase/authService";
 
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +14,25 @@ export default function LoginScreen() {
   const [remember, setRemember] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [error, setError] = useState<string | null>(null);
+  const handleLogin = async () => {
+    setError(null);
+
+    if (!email || !password) {
+      setError("Veuillez remplir tous les champs");
+      return;
+    }
+
+    try {
+      await loginUser(email, password);
+      setShowSuccess(true);
+    } catch (err: any) {
+      setError(err);
+    }
+  };
+
+
+
 
   if (showSuccess) {
     
@@ -67,7 +87,8 @@ export default function LoginScreen() {
           <Text style={styles.forgot}>Forgot password</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.button} onPress={() => setShowSuccess(true)}>
+      {error && <Text style={styles.errorText}>{error}</Text>}
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
       <Text style={styles.signup}>
@@ -79,7 +100,14 @@ export default function LoginScreen() {
 }
 
 
+
 const styles = StyleSheet.create({
+  errorText: {
+    color: "#FF4B4B",
+    textAlign: "center",
+    marginBottom: 12,
+    fontSize: 14,
+  },
   container: { flexGrow: 1, backgroundColor: '#fff', padding: 24, justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#888', textAlign: 'center', marginBottom: 24 },

@@ -4,7 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { registerUser } from "../firebase/authService";
 import { RootStackParamList } from '../navigation/types';
+
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -14,11 +16,38 @@ export default function RegisterScreen() {
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+
+  const handleRegister = async () => {
+    setError(null);
+
+    // Validation de base
+    if (!email || !firstName || !lastName || !password || !confirmPassword) {
+      setError("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    try {
+      await registerUser(email, password, firstName, lastName);
+      navigation.navigate("AccountCreated");
+    } catch (err: any) {
+      setError(err);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Create Your Account</Text>
       <Text style={styles.subtitle}>Create account for exploring news</Text>
+      {error && <Text style={styles.errorText}>{error}</Text>}
       {step === 1 && (
         <>
           <Image source={require('../../assets/images/login-amico.png')} style={styles.amicoImgLarge} resizeMode="contain" />
@@ -71,27 +100,42 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Enter your password"
-              secureTextEntry
+              secureTextEntry={!showPassword} // <--- ici
               value={password}
               onChangeText={setPassword}
               placeholderTextColor="#888"
             />
-            <Ionicons name="eye-off-outline" size={20} color="#246BFD" style={styles.inputIconRight} />
+            <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+              <Ionicons 
+                name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color="#246BFD" 
+                 
+              />
+            </TouchableOpacity>
           </View>
+
           <Text style={styles.label}>Confirm Password</Text>
           <View style={styles.inputWrapperRow}>
             <Feather name="lock" size={20} color="#246BFD" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Confirm Password"
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword} // <--- ici
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholderTextColor="#888"
             />
-            <Ionicons name="eye-off-outline" size={20} color="#246BFD" style={styles.inputIconRight} />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(prev => !prev)}>
+              <Ionicons 
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color="#246BFD" 
+                
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AccountCreated')}>
+          <TouchableOpacity style={styles.button} onPress={handleRegister}>
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
         </>
@@ -101,6 +145,12 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorText: {
+    color: "#FF4B4B",
+    textAlign: "center",
+    marginBottom: 12,
+    fontSize: 14,
+  },
   container: { flexGrow: 1, backgroundColor: '#fff', padding: 24, justifyContent: 'center' },
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#888', textAlign: 'center', marginBottom: 24 },
