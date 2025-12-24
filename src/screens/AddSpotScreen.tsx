@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Animated, Easing, Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { RootStackParamList } from '../navigation/types';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase/firebase';
 
 
 
@@ -21,6 +23,10 @@ export default function AddSpotScreen() {
   const [showHint, setShowHint] = useState(true);
   const [search, setSearch] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [spotName, setSpotName] = useState('');
+  const [description, setDescription] = useState('');
+  const [publishing, setPublishing] = useState(false);
+
   const [region, setRegion] = useState({
     latitude: 48.8584,
     longitude: 2.2945,
@@ -78,6 +84,45 @@ export default function AddSpotScreen() {
       setSelectedImage(result.assets[0].uri);
     }
   };
+  const handlePublishSpot = async () => {
+    if (!spotName || !category || !description || !confirmedLocation) {
+      alert('Please fill all required fields');
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert('User not authenticated');
+      return;
+    }
+
+    try {
+      setPublishing(true);
+
+      await addDoc(collection(db, 'spots'), {
+        name: spotName,
+        category,
+        description,
+        image: selectedImage || '',
+        latitude: confirmedLocation.latitude,
+        longitude: confirmedLocation.longitude,
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+        isValidated: true,
+        ratingAvg: 0,
+        reviewsCount: 0,
+      });
+
+      alert('Spot published successfully');
+      navigation.goBack();
+    } catch (e) {
+      console.error(e);
+      alert('Error while publishing spot');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F4F7FE' }}>
@@ -121,7 +166,14 @@ export default function AddSpotScreen() {
         )}
         <Text style={styles.photoHint}>Add at least 3 photos of the spot</Text>
         <Text style={styles.label}>Spot Name</Text>
-        <TextInput style={styles.input} placeholder="Enter spot name" placeholderTextColor="#B0B0B0" />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter spot name"
+          placeholderTextColor="#B0B0B0"
+          value={spotName}
+          onChangeText={setSpotName}
+        />
+
         <Text style={styles.label}>Category</Text>
         <TouchableOpacity style={styles.inputRow} onPress={() => setShowCategoryList(!showCategoryList)}>
           <Text style={[styles.inputText, { color: category ? '#231934' : '#B0B0B0' }]}> {category || 'Select a category'} </Text>
@@ -150,7 +202,10 @@ export default function AddSpotScreen() {
           placeholderTextColor="#B0B0B0"
           multiline
           numberOfLines={4}
+          value={description}
+          onChangeText={setDescription}
         />
+
         <Text style={styles.label}>Location</Text>
         {/* Search bar au-dessus de la carte */}
         <View style={styles.searchBarWrapper}>
@@ -253,8 +308,16 @@ export default function AddSpotScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <TouchableOpacity style={styles.publishBtn}>
-          <Text style={styles.publishBtnText}>Publish Spot</Text>
+        <TouchableOpacity
+          style={styles.publishBtn}
+          onPress={handlePublishSpot}
+          disabled={publishing}
+        >
+
+
+          <Text style={styles.publishBtnText}>
+            {publishing ? 'Publishing...' : 'Publish Spot'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

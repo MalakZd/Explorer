@@ -1,12 +1,17 @@
 import { ImageSourcePropType } from 'react-native';
 
 export type Place = {
-  image: ImageSourcePropType;
+  id: string;
   name: string;
   city: string;
+  image: any;
   rating: number;
-  favorite: boolean;
+  favorite?: boolean;
+  latitude: number;
+  longitude: number;
+  category: string;
 };
+
 
 export type RootStackParamList = {
   Main: undefined;
