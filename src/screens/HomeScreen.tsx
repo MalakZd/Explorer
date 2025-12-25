@@ -1,14 +1,19 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth, db } from '../firebase/firebase';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+
 import CategoryPill from '../components/CategoryPill';
 import PlaceCard from '../components/PlaceCard';
 import SearchBar from '../components/SearchBar';
@@ -25,60 +30,131 @@ const categories = [
   { label: 'Restaurants' },
 ];
 
-const places: Place[] = [
-  {
-    image: require('../../assets/images/place1.jpg'),
-    name: 'Dar El Yacout, Marrakech',
-    city: 'Marrakech, Morocco',
-    rating: 4.8,
-    favorite: true,
-  },
-  {
-    image: require('../../assets/images/place2.jpg'),
-    name: 'Café de Paris',
-    city: 'Paris, France',
-    rating: 4.7,
-    favorite: false,
-  },
-  {
-    image: require('../../assets/images/place3.jpg'),
-    name: 'La Piazza',
-    city: 'Rome, Italy',
-    rating: 4.6,
-    favorite: false,
-  },
-];
-
 const HomeScreen: React.FC = () => {
-  const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState(0);
-  const [favStates, setFavStates] = useState(places.map(p => p.favorite));
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // 🔹 STATES
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState(0);
+
+  const [spots, setSpots] = useState<Place[]>([]);
+  const [favStates, setFavStates] = useState<boolean[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [firstName, setFirstName] = useState<string | null>(null);
+
+  // 🔹 FAVORITE (local pour l’instant)
   const handleFavorite = (idx: number) => {
-    setFavStates(favStates => {
-      const newFavs = [...favStates];
-      newFavs[idx] = !newFavs[idx];
-      return newFavs;
+    setFavStates(prev => {
+      const copy = [...prev];
+      copy[idx] = !copy[idx];
+      return copy;
     });
   };
 
+  // =========================
+  // 🔹 FETCH USER FIRST NAME
+  // =========================
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) {
+          setFirstName(snap.data().firstName);
+        }
+      } catch (e) {
+        console.log('Erreur user:', e);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // =========================
+  // 🔹 FETCH SPOTS FROM FIRESTORE
+  // =========================
+  useEffect(() => {
+    const fetchSpots = async () => {
+      try {
+        const q = query(
+          collection(db, 'spots'),
+          where('isValidated', '==', true)
+        );
+
+        const snapshot = await getDocs(q);
+
+        const spotsData: Place[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+
+          return {
+            id: doc.id,
+            name: data.name,
+            city: data.category, // temporaire
+            image: { uri: data.image },
+            rating: data.ratingAvg ?? 0,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            category: data.category,
+            favorite: false,
+          };
+        });
+
+        setSpots(spotsData);
+        setFavStates(spotsData.map(() => false));
+      } catch (e) {
+        console.log('Erreur spots:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpots();
+  }, []);
+
+  // =========================
+  // 🔹 LOADING
+  // =========================
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>
+          Chargement des spots...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  // =========================
+  // 🔹 UI
+  // =========================
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.hi}>Hi, User</Text>
-          <Text style={styles.subtitle}>Explore the world with SpotNa</Text>
+          <Text style={styles.hi}>
+            Hi{firstName ? `, ${firstName}` : ''}
+          </Text>
+          <Text style={styles.subtitle}>Explore the world with NexSpot</Text>
         </View>
+
         <View style={{ paddingHorizontal: 20 }}>
-          <SearchBar value={search} onChangeText={setSearch} onFilterPress={() => {}} />
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onFilterPress={() => {}}
+          />
+
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Popular places</Text>
             <TouchableOpacity>
               <Text style={styles.viewAll}>View all</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {categories.map((cat, idx) => (
               <CategoryPill
                 key={cat.label}
@@ -88,13 +164,15 @@ const HomeScreen: React.FC = () => {
               />
             ))}
           </ScrollView>
+
           <View style={styles.cardsScroll}>
-            {places.map((place, idx) => (
+            {spots.map((place, idx) => (
               <TouchableOpacity
-                key={place.name}
+                key={place.id}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('PlaceDetails', { place })}
-                style={styles.cardWrapper}
+                onPress={() =>
+                  navigation.navigate('PlaceDetails', { place })
+                }
               >
                 <PlaceCard
                   image={place.image}
