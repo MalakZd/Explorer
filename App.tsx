@@ -6,6 +6,7 @@ import { RootStackParamList } from './src/navigation/types';
 import AccountCreatedScreen from './src/screens/AccountCreatedScreen';
 import AddSpotScreen from './src/screens/AddSpotScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import MyPostsScreen from './src/screens/MyPostsScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import PlaceDetailsScreen from './src/screens/PlaceDetailsScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -25,6 +26,8 @@ export default function App() {
         <Stack.Screen name="Main" component={BottomTabNavigator} />
         <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} />
         <Stack.Screen name="AddSpot" component={AddSpotScreen} />
+        <Stack.Screen name="MyPosts" component={MyPostsScreen} />
+        <Stack.Screen name="LikedPlaces" component={require('./src/screens/LikedPlacesScreen').default} />
       </Stack.Navigator>
     </NavigationContainer>
   );

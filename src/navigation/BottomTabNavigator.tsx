@@ -5,7 +5,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
-import LikedPlacesScreen from '../screens/LikedPlacesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import colors from '../theme/colors';
 import { RootStackParamList } from './types';
@@ -95,7 +94,15 @@ const BottomTabNavigator: React.FC = () => (
           tabBarButton: props => <AddButton {...props} />,
         }}
       />
-      <Tab.Screen name="Favorites" component={LikedPlacesScreen} />
+      <Tab.Screen name="MyPosts" component={require('../screens/MyPostsScreen').default} options={{
+        tabBarIcon: ({ focused }) => (
+          <View style={{ alignItems: 'center' }}>
+            <Ionicons name="albums-outline" size={26} color={focused ? colors.primary : colors.darkText} />
+            {focused && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4B4B', marginTop: 4 }} />}
+          </View>
+        ),
+        tabBarLabel: 'Mes posts',
+      }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   </View>

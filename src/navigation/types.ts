@@ -1,6 +1,8 @@
-import { ImageSourcePropType } from 'react-native';
 
 export type Place = {
+  openingHours: string;
+  address: string;
+  description: string;
   id: string;
   name: string;
   city: string;
@@ -22,4 +24,6 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Splash: undefined;
   AccountCreated: undefined;
+  MyPosts: undefined;
+  LikedPlaces: undefined;
 };

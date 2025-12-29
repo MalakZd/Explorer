@@ -13,6 +13,12 @@ const likedPlaces = [
     rating: 4.8,
     favorite: true,
     image: require('../../assets/images/place1.jpg'),
+    address: 'Derb Zanka, Marrakech',
+    description: 'A beautiful traditional riad with stunning architecture.',
+    openingHours: '09:00 - 18:00',
+    latitude: 31.6295,
+    longitude: -8.0088,
+    category: 'Historical',
   },
   {
     id: '2',
@@ -21,6 +27,12 @@ const likedPlaces = [
     rating: 4.7,
     favorite: true,
     image: require('../../assets/images/place2.jpg'),
+    address: 'Rue Youssef ben Tachfine, Marrakech',
+    description: 'An exotic botanical garden with vibrant blue buildings.',
+    openingHours: '08:00 - 18:00',
+    latitude: 31.6383,
+    longitude: -8.0070,
+    category: 'Garden',
   },
   // Add more places as needed
 ];
@@ -29,6 +41,9 @@ export default function LikedPlacesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={26} color="#246BFD" />
+      </TouchableOpacity>
       <Text style={styles.title}>Liked Places</Text>
       {likedPlaces.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -69,10 +84,23 @@ export default function LikedPlacesScreen() {
 }
 
 const styles = StyleSheet.create({
+  backBtn: {
+    position: 'absolute',
+    top: 36,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#246BFD',
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F4F7FE',
-    paddingTop: 48,
+    paddingTop: 70,
     paddingHorizontal: 18,
   },
   title: {

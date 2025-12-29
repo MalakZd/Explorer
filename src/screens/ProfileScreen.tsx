@@ -4,7 +4,7 @@ import { logoutUser } from "../firebase/authService";
 
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -97,7 +97,8 @@ export default function ProfileScreen() {
           <Text style={[styles.rowLabel, { color: themed.text }]}>Settings</Text>
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]}> 
+        {/* <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => navigation.navigate('Favorites')}> */}
+        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => navigation.navigate('LikedPlaces')}>
           <Ionicons name="star-outline" size={22} color={themed.secondary} />
           <Text style={[styles.rowLabel, { color: themed.text }]}>Favorites</Text>
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />

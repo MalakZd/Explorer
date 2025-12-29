@@ -3,12 +3,12 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 // import { LinearGradient } from 'expo-linear-gradient';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
 import { Animated, Easing, Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { RootStackParamList } from '../navigation/types';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebase';
+import { RootStackParamList } from '../navigation/types';
 
 
 
@@ -114,7 +114,7 @@ export default function AddSpotScreen() {
       });
 
       alert('Spot published successfully');
-      navigation.goBack();
+      navigation.navigate('Main'); // kirj3 l home screen une fois n publisher 
     } catch (e) {
       console.error(e);
       alert('Error while publishing spot');

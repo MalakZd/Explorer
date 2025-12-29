@@ -10,9 +10,9 @@ import {
   View,
 } from 'react-native';
 
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from '../firebase/firebase';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 import CategoryPill from '../components/CategoryPill';
 import PlaceCard from '../components/PlaceCard';
@@ -25,9 +25,16 @@ export const options = {
 };
 
 const categories = [
-  { label: 'Most Viewed' },
-  { label: 'Coffee shops' },
-  { label: 'Restaurants' },
+  { label: 'Most Viewed' }, 
+  { label: 'Coffee Shop' },
+  { label: 'Restaurant' },
+  { label: 'Secret Spot' },
+  { label: 'Park' },
+  { label: 'Museum' },
+  { label: 'Bar' },
+  { label: 'Other' },
+  // { label: 'Hidden Spot' }, (Tanzidha)
+  { label: 'Study Spots' },
 ];
 
 const HomeScreen: React.FC = () => {
@@ -98,7 +105,10 @@ const HomeScreen: React.FC = () => {
             latitude: data.latitude,
             longitude: data.longitude,
             category: data.category,
+            description: data.description,
             favorite: false,
+            openingHours: data.openingHours ?? '',
+            address: data.address ?? '',
           };
         });
 
@@ -137,7 +147,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.hi}>
             Hi{firstName ? `, ${firstName}` : ''}
           </Text>
-          <Text style={styles.subtitle}>Explore the world with NexSpot</Text>
+          <Text style={styles.subtitle}>Explore the world with Spot</Text>
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
@@ -149,7 +159,7 @@ const HomeScreen: React.FC = () => {
 
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Popular places</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => { setActiveCategory(0); setSearch(''); }}>
               <Text style={styles.viewAll}>View all</Text>
             </TouchableOpacity>
           </View>
@@ -166,24 +176,38 @@ const HomeScreen: React.FC = () => {
           </ScrollView>
 
           <View style={styles.cardsScroll}>
-            {spots.map((place, idx) => (
-              <TouchableOpacity
-                key={place.id}
-                activeOpacity={0.85}
-                onPress={() =>
-                  navigation.navigate('PlaceDetails', { place })
-                }
-              >
-                <PlaceCard
-                  image={place.image}
-                  name={place.name}
-                  city={place.city}
-                  rating={place.rating}
-                  favorite={favStates[idx]}
-                  onFavoritePress={() => handleFavorite(idx)}
-                />
-              </TouchableOpacity>
-            ))}
+            {spots
+              .filter((place) => {
+                const searchLower = search.toLowerCase();
+                const selectedCategory = categories[activeCategory].label;
+                // Filtrer par catégorie sélectionnée (sauf Most Viewed)
+                const matchCategory =
+                  selectedCategory === 'Most Viewed' ||
+                  place.category?.toLowerCase() === selectedCategory.toLowerCase();
+                // Filtrer par nom ou catégorie (search)
+                const matchSearch =
+                  place.name.toLowerCase().includes(searchLower) ||
+                  place.category.toLowerCase().includes(searchLower);
+                return matchCategory && matchSearch;
+              })
+              .map((place, idx) => (
+                <TouchableOpacity
+                  key={place.id}
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    navigation.navigate('PlaceDetails', { place })
+                  }
+                >
+                  <PlaceCard
+                    image={place.image}
+                    name={place.name}
+                    city={place.city}
+                    rating={place.rating}
+                    favorite={favStates[idx]}
+                    onFavoritePress={() => handleFavorite(idx)}
+                  />
+                </TouchableOpacity>
+              ))}
           </View>
         </View>
       </ScrollView>
