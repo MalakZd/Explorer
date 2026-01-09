@@ -1,8 +1,31 @@
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
-import { signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // ------------------------------------
+
+// 🔹 ADMIN: GESTION UTILISATEURS
+import { collection, getDocs, updateDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+// Récupérer tous les utilisateurs
+export const getAllUsers = async () => {
+  const usersCol = collection(db, "users");
+  const userSnapshot = await getDocs(usersCol);
+  return userSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+};
+
+// Supprimer un utilisateur partout (Firestore + Auth) via Cloud Function
+export const deleteUser = async (uid: string) => {
+  const functions = getFunctions();
+  const deleteUserEverywhere = httpsCallable(functions, 'deleteUserEverywhere');
+  await deleteUserEverywhere({ uid });
+};
+
+// Modifier le rôle d'un utilisateur
+export const setUserRole = async (uid: string, role: string) => {
+  await updateDoc(doc(db, "users", uid), { role });
+};
 // 🔹 REGISTER
 // ------------------------------------
 export const registerUser = async (

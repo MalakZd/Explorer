@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SwipeListView } from 'react-native-swipe-list-view';
@@ -19,49 +19,42 @@ const MyPostsScreen: React.FC = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const fetchMyPosts = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setPosts([]);
-        setLoading(false);
-        console.log('User not authenticated');
-        return;
-      }
-      try {
-        const q = query(
-          collection(db, 'spots'),
-          where('createdBy', '==', user.uid),
-          where('isValidated', '==', true)
-        );
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          console.log('No posts found for user', user.uid);
-        }
-        const myPosts: Place[] = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name,
-            description: data.description,
-            image: data.image ? { uri: data.image } : require('../../assets/images/profile-avatar.png'),
-            rating: data.ratingAvg ?? 0,
-            favorite: false,
-            latitude: data.latitude ?? 0,
-            longitude: data.longitude ?? 0,
-            category: data.category || '',
-            city: data.city || '',
-            openingHours: data.openingHours || '',
-            address: data.address || '',
-          };
-        });
-        setPosts(myPosts);
-      } catch (e) {
-        setPosts([]);
-        console.log('Error fetching posts:', e);
-      }
+    const user = auth.currentUser;
+    if (!user) {
+      setPosts([]);
       setLoading(false);
-    };
-    fetchMyPosts();
+      return;
+    }
+    const q = query(
+      collection(db, 'spots'),
+      where('createdBy', '==', user.uid),
+      where('isValidated', '==', true)
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      const myPosts: Place[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Firestore images field for post', doc.id, data.images);
+        return {
+          id: doc.id,
+          name: data.name,
+          description: data.description,
+          image: data.images && Array.isArray(data.images) && data.images.length > 0
+            ? { uri: data.images[0] }
+            : undefined,
+          rating: data.ratingAvg ?? 0,
+          favorite: false,
+          latitude: data.latitude ?? 0,
+          longitude: data.longitude ?? 0,
+          category: data.category || '',
+          city: data.city || '',
+          openingHours: data.openingHours || '',
+          address: data.address || '',
+        };
+      });
+      setPosts(myPosts);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   const handleDelete = async (id: string) => {

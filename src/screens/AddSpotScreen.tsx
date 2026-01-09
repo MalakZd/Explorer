@@ -103,7 +103,7 @@ export default function AddSpotScreen() {
         name: spotName,
         category,
         description,
-        image: selectedImage || '',
+        images: selectedImage ? [selectedImage] : [],
         latitude: confirmedLocation.latitude,
         longitude: confirmedLocation.longitude,
         createdBy: user.uid,

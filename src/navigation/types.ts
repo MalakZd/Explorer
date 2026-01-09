@@ -26,4 +26,5 @@ export type RootStackParamList = {
   AccountCreated: undefined;
   MyPosts: undefined;
   LikedPlaces: undefined;
+  Admin: undefined;
 };

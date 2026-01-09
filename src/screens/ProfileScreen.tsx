@@ -2,15 +2,39 @@
 import { useNavigation } from "@react-navigation/native";
 import { logoutUser } from "../firebase/authService";
 
+
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { auth, db } from '../firebase/firebase';
+import { uploadProfileImage } from '../firebase/storageService';
+
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const [showDetails, setShowDetails] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+
+  // Charger les infos utilisateur (nom, username, photo)
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        setUserData(snap.data());
+        if (snap.data().photoURL) setProfileImage(snap.data().photoURL);
+      }
+    };
+    fetchUser();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -20,6 +44,38 @@ export default function ProfileScreen() {
       });
     } catch (error) {
       console.log("Logout error:", error);
+    }
+  };
+
+  // Fonction pour choisir et uploader une image de profil
+  const pickProfileImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission requise', 'L\'application a besoin de la permission d\'accéder à vos photos.');
+      return;
+    }
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setLoadingImage(true);
+      try {
+        const downloadURL = await uploadProfileImage(result.assets[0].uri);
+        setProfileImage(downloadURL);
+        // Mettre à jour Firestore
+        const user = auth.currentUser;
+        if (user) {
+          await updateDoc(doc(db, 'users', user.uid), { photoURL: downloadURL });
+        }
+        Alert.alert('Succès', 'Photo de profil mise à jour !');
+      } catch (e) {
+        Alert.alert('Erreur', "Impossible d'uploader la photo");
+      } finally {
+        setLoadingImage(false);
+      }
     }
   };
 
@@ -35,19 +91,29 @@ export default function ProfileScreen() {
   };
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: themed.background }]}> 
+
       <View style={[styles.headerBg, { backgroundColor: themed.secondary }]}> 
         <View style={styles.avatarShadow}>
           <View style={styles.avatarBorder}>
-            {/* <Image source={require('../../assets/images/profile-avatar.png')} style={styles.avatar} /> */}
-            <TouchableOpacity style={styles.editBtn}>
+            {loadingImage ? (
+              <View style={[styles.avatar, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#eee' }]}> 
+                <ActivityIndicator size="large" color={themed.secondary} />
+              </View>
+            ) : profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.avatar} />
+            ) : (
+              <Image source={require('../../assets/images/profile-avatar.png')} style={styles.avatar} />
+            )}
+            <TouchableOpacity style={styles.editBtn} onPress={pickProfileImage}>
               <Feather name="edit-2" size={18} color={themed.secondary} />
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={[styles.name, { color: themed.text }]}>user</Text>
-        <Text style={[styles.username, { color: darkMode ? 'rgba(255,255,255,0.7)' : 'rgba(36,107,253,0.7)' }]}>@user.zahid</Text>
+        <Text style={[styles.name, { color: themed.text, fontSize: 28, marginTop: 10, marginBottom: 0 }]}> {userData?.firstName || 'Utilisateur'} {userData?.lastName || ''} </Text>
+        <Text style={[styles.username, { color: darkMode ? 'rgba(255,255,255,0.7)' : 'rgba(36,107,253,0.7)', fontSize: 17, marginBottom: 4 }]}>@{userData?.username || auth.currentUser?.email?.split('@')[0]}</Text>
+        <Text style={{ color: themed.text, fontSize: 13, marginTop: 2, opacity: 0.7, fontStyle: 'italic' }}></Text>
       </View>
-      <View style={[styles.card, { backgroundColor: themed.card, shadowColor: themed.secondary }]}> 
+      <View style={[styles.card, { backgroundColor: themed.card, shadowColor: themed.secondary, borderWidth: 1, borderColor: themed.border, marginTop: -48, marginBottom: 32 }]}> 
         {/* Settings Modal */}
         <Modal
           visible={showSettings}
@@ -80,38 +146,38 @@ export default function ProfileScreen() {
             </View>
           </View>
         </Modal>
-        <TouchableOpacity style={styles.row} onPress={() => setShowDetails(!showDetails)}>
-          <Ionicons name="person-circle-outline" size={24} color="#246BFD" />
-          <Text style={styles.rowLabel}>Personal Info</Text>
-          <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={22} color="#246BFD" style={{ marginLeft: 'auto' }} />
+        <TouchableOpacity style={[styles.row, { borderBottomColor: themed.border }]} onPress={() => setShowDetails(!showDetails)}>
+          <Ionicons name="person-circle-outline" size={24} color={themed.secondary} />
+          <Text style={[styles.rowLabel, { color: themed.text }]}>Informations personnelles</Text>
+          <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={22} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
         {showDetails && (
-          <View style={[styles.detailsBox, { backgroundColor: themed.row }]}> 
+          <View style={[styles.detailsBox, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]}> 
             <Text style={styles.detail}><Text style={styles.detailLabel}>Email:</Text> malak@email.com</Text>
-            <Text style={styles.detail}><Text style={styles.detailLabel}>Phone:</Text> +212 600 000 000</Text>
-            <Text style={styles.detail}><Text style={styles.detailLabel}>Location:</Text> Casablanca, Morocco</Text>
+            <Text style={styles.detail}><Text style={styles.detailLabel}>Téléphone:</Text> +212 600 000 000</Text>
+            <Text style={styles.detail}><Text style={styles.detailLabel}>Ville:</Text> Casablanca, Maroc</Text>
           </View>
         )}
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => setShowSettings(true)}>
+        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]} onPress={() => setShowSettings(true)}>
           <Ionicons name="settings-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Settings</Text>
+          <Text style={[styles.rowLabel, { color: themed.text }]}>Paramètres</Text>
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
         {/* <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => navigation.navigate('Favorites')}> */}
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => navigation.navigate('LikedPlaces')}>
+        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]} onPress={() => navigation.navigate('LikedPlaces')}>
           <Ionicons name="star-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Favorites</Text>
+          <Text style={[styles.rowLabel, { color: themed.text }]}>Favoris</Text>
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]}> 
+        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]}> 
           <Ionicons name="help-circle-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Help & Support</Text>
+          <Text style={[styles.rowLabel, { color: themed.text }]}>Aide & Support</Text>
           <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: themed.logout, shadowColor: themed.logout }]} onPress={handleLogout}>
+      <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: themed.logout, shadowColor: themed.logout, marginTop: 30, marginBottom: 10, borderRadius: 22, paddingVertical: 18, paddingHorizontal: 48 }]} onPress={handleLogout}>
         <Feather name="log-out" size={22} color="#fff" />
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>Déconnexion</Text>
       </TouchableOpacity>
     </ScrollView>
   );

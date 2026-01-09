@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import colors from '../theme/colors';
