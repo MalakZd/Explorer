@@ -25,6 +25,6 @@ const styles = StyleSheet.create({
   illustration: { width: 220, height: 220 },
   title: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
   subtitle: { fontSize: 15, color: '#888', textAlign: 'center', marginBottom: 32 },
-  button: { backgroundColor: '#246BFD', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center' },
+  button: { backgroundColor: '#1A1A2E', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

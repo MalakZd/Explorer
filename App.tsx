@@ -6,6 +6,7 @@ import AdminTabNavigator from './src/navigation/AdminTabNavigator';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { RootStackParamList } from './src/navigation/types';
 import AccountCreatedScreen from './src/screens/AccountCreatedScreen';
+
 import AddSpotScreen from './src/screens/AddSpotScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import MyPostsScreen from './src/screens/MyPostsScreen';
@@ -13,7 +14,6 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import PlaceDetailsScreen from './src/screens/PlaceDetailsScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import SplashScreen from './src/screens/SplashScreen';
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
@@ -39,6 +39,8 @@ export default function App() {
           <Stack.Screen name="AddSpot" component={AddSpotScreen} />
           <Stack.Screen name="MyPosts" component={MyPostsScreen} />
           <Stack.Screen name="LikedPlaces" component={require('./src/screens/LikedPlacesScreen').default} />
+          {/* <Stack.Screen name="AccountInfo" component={AccountInfoScreen} /> */}
+
         </Stack.Navigator>
       )}
     </NavigationContainer>

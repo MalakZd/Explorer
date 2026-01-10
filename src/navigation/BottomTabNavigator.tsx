@@ -5,9 +5,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import colors from '../theme/colors';
+import HomeStackNavigator from './HomeStackNavigator';
 import { RootStackParamList } from './types';
 let ExplorerScreen;
 if (Platform.OS === 'web') {
@@ -57,7 +57,7 @@ const BottomTabNavigator: React.FC = () => (
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: '#ffffffff',
           borderTopWidth: 0,
           height: 70,
           elevation: 10,
@@ -67,26 +67,26 @@ const BottomTabNavigator: React.FC = () => (
         tabBarIcon: ({ focused }) => {
           let icon;
           if (route.name === 'Home') {
-            icon = <Ionicons name="home" size={26} color={focused ? colors.primary : colors.darkText} />;
+            icon = <Ionicons name="home" size={26} color={focused ? '#1A1A2E' : '#383860ff'} />;
           } else if (route.name === 'Explore') {
-            icon = <Ionicons name="compass-outline" size={26} color={focused ? colors.primary : colors.darkText} />;
+            icon = <Ionicons name="compass-outline" size={26} color={focused ? '#1A1A2E' : '#383860ff'} />;
           } else if (route.name === 'Favorites') {
-            icon = <Ionicons name="heart-outline" size={24} color={focused ? colors.primary : colors.darkText} />;
+            icon = <Ionicons name="heart-outline" size={24} color={focused ? '#1A1A2E' : '#383860ff'} />;
           } else if (route.name === 'Profile') {
-            icon = <Ionicons name="person-outline" size={24} color={focused ? colors.primary : colors.darkText} />;
+            icon = <Ionicons name="person-outline" size={24} color={focused ? '#1A1A2E' : '#383860ff'} />;
           }
           return (
             <View style={{ alignItems: 'center' }}>
               {icon}
               {focused && route.name !== 'Add' && (
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4B4B', marginTop: 4 }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A1A2E', marginTop: 4 }} />
               )}
             </View>
           );
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeStackNavigator} />
       <Tab.Screen name="Explore" component={ExplorerScreen} />
       <Tab.Screen
         name="Add"
@@ -98,8 +98,8 @@ const BottomTabNavigator: React.FC = () => (
       <Tab.Screen name="MyPosts" component={require('../screens/MyPostsScreen').default} options={{
         tabBarIcon: ({ focused }) => (
           <View style={{ alignItems: 'center' }}>
-            <Ionicons name="albums-outline" size={26} color={focused ? colors.primary : colors.darkText} />
-            {focused && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4B4B', marginTop: 4 }} />}
+            <Ionicons name="albums-outline" size={26} color={focused ? '#1A1A2E' : '#383860ff'} />
+            {focused && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A1A2E', marginTop: 4 }} />}
           </View>
         ),
         tabBarLabel: 'Mes posts',
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   addBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#1A1A2E',
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -128,10 +128,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -28,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   shadowWrapper: {
     position: 'absolute',

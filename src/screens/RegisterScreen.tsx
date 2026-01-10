@@ -53,7 +53,7 @@ export default function RegisterScreen() {
           <Image source={require('../../assets/images/login-amico.png')} style={styles.amicoImgLarge} resizeMode="contain" />
           <Text style={styles.label}>Email or Phone Number</Text>
           <View style={styles.inputWrapperRow}>
-            <Feather name="mail" size={20} color="#246BFD" style={styles.inputIcon} />
+            <Feather name="mail" size={20} color="#1A1A2E" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Email or Phone Number"
@@ -74,7 +74,7 @@ export default function RegisterScreen() {
           <Image source={require('../../assets/images/account-created.png')} style={styles.amicoImgLarge} resizeMode="contain" />
           <Text style={styles.label}>First Name</Text>
           <View style={styles.inputWrapperRow}>
-            <Feather name="user" size={20} color="#246BFD" style={styles.inputIcon} />
+            <Feather name="user" size={20} color="#1A1A2E" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="First Name"
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
           </View>
           <Text style={styles.label}>Last Name</Text>
           <View style={styles.inputWrapperRow}>
-            <Feather name="user" size={20} color="#246BFD" style={styles.inputIcon} />
+            <Feather name="user" size={20} color="#1A1A2E" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Last Name"
@@ -96,7 +96,7 @@ export default function RegisterScreen() {
           </View>
           <Text style={styles.label}>Password</Text>
           <View style={styles.inputWrapperRow}>
-            <Feather name="lock" size={20} color="#246BFD" style={styles.inputIcon} />
+            <Feather name="lock" size={20} color="#1A1A2E" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Enter your password"
@@ -109,7 +109,7 @@ export default function RegisterScreen() {
               <Ionicons 
                 name={showPassword ? "eye-outline" : "eye-off-outline"} 
                 size={20} 
-                color="#246BFD" 
+                color="#1A1A2E" 
                  
               />
             </TouchableOpacity>
@@ -117,7 +117,7 @@ export default function RegisterScreen() {
 
           <Text style={styles.label}>Confirm Password</Text>
           <View style={styles.inputWrapperRow}>
-            <Feather name="lock" size={20} color="#246BFD" style={styles.inputIcon} />
+            <Feather name="lock" size={20} color="#1A1A2E" style={styles.inputIcon} />
             <TextInput
               style={styles.inputWithIconRow}
               placeholder="Confirm Password"
@@ -130,7 +130,7 @@ export default function RegisterScreen() {
               <Ionicons 
                 name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
                 size={20} 
-                color="#246BFD" 
+                color="#1A1A2E" 
                 
               />
             </TouchableOpacity>
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   inputWrapperRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F2F2', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12 },
   input: { height: 48, fontSize: 16 },
     inputWithIconRow: { flex: 1, height: 48, fontSize: 16, paddingLeft: 36, paddingRight: 36, marginTop: 0, marginBottom: 0, textAlignVertical: 'center' },
-  button: { backgroundColor: '#246BFD', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
+  button: { backgroundColor: '#1A1A2E', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   amicoImg: { width: 180, height: 120, alignSelf: 'center', marginBottom: 16 },
   amicoImgLarge: { width: 260, height: 200, alignSelf: 'center', marginBottom: 16 },

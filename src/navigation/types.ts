@@ -12,6 +12,13 @@ export type Place = {
   latitude: number;
   longitude: number;
   category: string;
+  amenities?: string[];
+  priceRange?: string;
+  creator?: {
+    id: string;
+    firstName: string;
+    photoURL: string | null;
+  };
 };
 
 
@@ -27,4 +34,5 @@ export type RootStackParamList = {
   MyPosts: undefined;
   LikedPlaces: undefined;
   Admin: undefined;
+  AccountInfo: undefined;
 };

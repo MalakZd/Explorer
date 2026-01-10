@@ -1,385 +1,599 @@
-// ProfileScreen: User profile (unprofile)
-import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
 import { logoutUser } from "../firebase/authService";
-
-
-import { Feather, Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { auth, db } from '../firebase/firebase';
-import { uploadProfileImage } from '../firebase/storageService';
-
+import { auth, db } from "../firebase/firebase";
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const [showDetails, setShowDetails] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [loadingImage, setLoadingImage] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
 
-  // Charger les infos utilisateur (nom, username, photo)
+  const [userData, setUserData] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Statistiques dynamiques
+  const [postsCount, setPostsCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [avgRating, setAvgRating] = useState(0);
+
+  /* ================= DATA ================= */
   useEffect(() => {
-    const fetchUser = async () => {
+    const load = async () => {
       const user = auth.currentUser;
       if (!user) return;
-      const snap = await getDoc(doc(db, 'users', user.uid));
+
+      const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         setUserData(snap.data());
-        if (snap.data().photoURL) setProfileImage(snap.data().photoURL);
+        setProfileImage(snap.data().photoURL || null);
       }
+
+      const dm = await AsyncStorage.getItem("darkMode");
+      if (dm) setDarkMode(JSON.parse(dm));
     };
-    fetchUser();
+    load();
   }, []);
 
-  const handleLogout = async () => {
+  // Recharger les données quand l'écran est focusé
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfile = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          setUserData(snap.data());
+          setProfileImage(snap.data().photoURL || null);
+        }
+
+        // Charger les statistiques
+        await loadStats(user.uid);
+      };
+      loadProfile();
+    }, [])
+  );
+
+  // Charger les statistiques
+  const loadStats = async (userId: string) => {
     try {
-      await logoutUser();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
+      // Compter les posts
+      const postsQuery = query(
+        collection(db, 'spots'),
+        where('createdBy', '==', userId)
+      );
+      const postsSnapshot = await getDocs(postsQuery);
+      setPostsCount(postsSnapshot.size);
+
+      // Calculer le rating moyen des posts
+      let totalRating = 0;
+      let ratedPosts = 0;
+      postsSnapshot.docs.forEach(doc => {
+        const rating = doc.data().ratingAvg;
+        if (rating && rating > 0) {
+          totalRating += rating;
+          ratedPosts++;
+        }
       });
+      setAvgRating(ratedPosts > 0 ? totalRating / ratedPosts : 0);
+
+      // Compter les favoris
+      const likesQuery = query(
+        collection(db, 'likes'),
+        where('userId', '==', userId)
+      );
+      const likesSnapshot = await getDocs(likesQuery);
+      setFavoritesCount(likesSnapshot.size);
     } catch (error) {
-      console.log("Logout error:", error);
+      console.error('Error loading stats:', error);
     }
   };
 
-  // Fonction pour choisir et uploader une image de profil
+  useEffect(() => {
+    AsyncStorage.setItem("darkMode", JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  /* ================= IMAGE ================= */
   const pickProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission requise', 'L\'application a besoin de la permission d\'accéder à vos photos.');
+    if (status !== "granted") {
+      Alert.alert("Permission requise", "L'accès à la galerie est nécessaire");
       return;
     }
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+
+    const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+
+    if (!result.canceled) {
       setLoadingImage(true);
       try {
-        const downloadURL = await uploadProfileImage(result.assets[0].uri);
-        setProfileImage(downloadURL);
-        // Mettre à jour Firestore
-        const user = auth.currentUser;
-        if (user) {
-          await updateDoc(doc(db, 'users', user.uid), { photoURL: downloadURL });
+        // Stocker directement l'URI locale (comme pour les spots)
+        const photoUri = result.assets[0].uri;
+        console.log('Photo sélectionnée:', photoUri);
+        
+        setProfileImage(photoUri);
+        await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+          photoURL: photoUri,
+        });
+        console.log('Photo sauvegardée dans Firestore');
+        
+        // Recharger immédiatement les données
+        const snap = await getDoc(doc(db, "users", auth.currentUser!.uid));
+        if (snap.exists()) {
+          setProfileImage(snap.data().photoURL || null);
         }
-        Alert.alert('Succès', 'Photo de profil mise à jour !');
-      } catch (e) {
-        Alert.alert('Erreur', "Impossible d'uploader la photo");
+      } catch (error) {
+        console.error('Erreur upload photo:', error);
+        Alert.alert('Erreur', 'Impossible de sauvegarder la photo');
       } finally {
         setLoadingImage(false);
       }
     }
   };
 
-
-  const themed = {
-    background: darkMode ? '#181A20' : '#F4F7FE',
-    card: darkMode ? '#23262F' : '#fff',
-    text: darkMode ? '#fff' : '#231934',
-    secondary: darkMode ? '#A1A7B3' : '#246BFD',
-    border: darkMode ? '#23262F' : '#F2F2F2',
-    row: darkMode ? '#23262F' : '#F4F7FE',
-    logout: '#FF4B4B',
+  /* ================= LOGOUT ================= */
+  const handleLogout = () => {
+    Alert.alert("Déconnexion", "Quitter votre compte ?", [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Déconnexion",
+        style: "destructive",
+        onPress: async () => {
+          await logoutUser();
+          navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+        },
+      },
+    ]);
   };
-  return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: themed.background }]}> 
 
-      <View style={[styles.headerBg, { backgroundColor: themed.secondary }]}> 
-        <View style={styles.avatarShadow}>
-          <View style={styles.avatarBorder}>
-            {loadingImage ? (
-              <View style={[styles.avatar, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#eee' }]}> 
-                <ActivityIndicator size="large" color={themed.secondary} />
+  /* ================= THEME ================= */
+  const theme = {
+    bg: darkMode ? "#0E0F14" : "#E8ECF4",
+    glass: darkMode ? "rgba(30,32,40,0.85)" : "#FFFFFF",
+    text: darkMode ? "#FFFFFF" : "#1A1A2E",
+    sub: darkMode ? "#A1A7B3" : "#7A7A7A",
+    accent: "#246BFD",
+    danger: "#FF4B4B",
+    cardBg: darkMode ? "rgba(30,32,40,0.6)" : "#FFFFFF",
+  };
+
+  /* ================= UI ================= */
+  return (
+    <ScrollView style={{ backgroundColor: theme.bg, flex: 1 }}>
+      {/* ===== HEADER ===== */}
+      <ImageBackground
+        source={require('../../assets/images/image.png')}
+        style={styles.headerBackground}
+        // imageStyle={{ borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={["rgba(0, 0, 0, 0.6)", "rgba(26, 26, 46, 0.85)"]}
+          style={styles.header}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
+        <TouchableOpacity style={styles.settingsIconBtn} onPress={() => setShowSettings(true)}>
+          <Ionicons name="settings-outline" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        <View style={styles.avatarWrapper}>
+          <View style={styles.glow} />
+          {loadingImage ? (
+            <ActivityIndicator color="#fff" size="large" />
+          ) : (
+            <Image
+              source={
+                profileImage
+                  ? { uri: profileImage }
+                  : require("../../assets/images/profile-avatar.png")
+              }
+              style={styles.avatar}
+            />
+          )}
+          <TouchableOpacity style={styles.cameraBtn} onPress={pickProfileImage}>
+            <Ionicons name="camera" size={18} color="#246BFD" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.name}>
+          {userData?.firstName || "Utilisateur"} {userData?.lastName || ""}
+        </Text>
+        <Text style={styles.username}>
+          @{userData?.username || auth.currentUser?.email?.split("@")[0]}
+        </Text>
+
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{postsCount}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{favoritesCount}</Text>
+            <Text style={styles.statLabel}>Favorites</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{avgRating > 0 ? avgRating.toFixed(1) : '0.0'}</Text>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+        </View>
+      </LinearGradient>
+      </ImageBackground>
+
+      {/* ===== MENU CARDS ===== */}
+      <View style={styles.menuContainer}>
+        <View style={[styles.menuCard, { backgroundColor: theme.cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("MyPosts")}
+          >
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#E8F5E9' }]}>
+              <Ionicons name="grid" size={22} color="#4CAF50" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuLabel, { color: theme.text }]}>My Posts</Text>
+              <Text style={[styles.menuSubtext, { color: theme.sub }]}>View and manage your spots</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.menuCard, { backgroundColor: theme.cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("LikedPlaces")}
+          >
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#FCE4EC' }]}>
+              <Ionicons name="heart" size={22} color="#E91E63" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuLabel, { color: theme.text }]}>Favorites</Text>
+              <Text style={[styles.menuSubtext, { color: theme.sub }]}>Your saved places</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.menuCard, { backgroundColor: theme.cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('AccountInfo')}
+          >
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#FFF3E0' }]}>
+              <Ionicons name="person" size={22} color="#FF9800" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuLabel, { color: theme.text }]}>Account Info</Text>
+              <Text style={[styles.menuSubtext, { color: theme.sub }]}>Personal information</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.menuCard, { backgroundColor: theme.cardBg }]}>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#E8EAF6' }]}>
+              <Ionicons name="help-circle" size={22} color="#3F51B5" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuLabel, { color: theme.text }]}>Help & Support</Text>
+              <Text style={[styles.menuSubtext, { color: theme.sub }]}>Get assistance</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ===== LOGOUT ===== */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={handleLogout}
+      >
+        <LinearGradient
+          colors={['#FF4B4B', '#D32F2F']}
+          style={styles.logoutGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {/* ===== SETTINGS MODAL ===== */}
+      <Modal visible={showSettings} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modal, { backgroundColor: theme.cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="settings" size={28} color={theme.accent} />
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Settings</Text>
+            </View>
+
+            <View style={[styles.switchRow, { backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : '#F5F5F5' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Ionicons name="moon" size={20} color={theme.text} />
+                <Text style={[styles.switchLabel, { color: theme.text }]}>
+                  Dark Mode
+                </Text>
               </View>
-            ) : profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatar} />
-            ) : (
-              <Image source={require('../../assets/images/profile-avatar.png')} style={styles.avatar} />
-            )}
-            <TouchableOpacity style={styles.editBtn} onPress={pickProfileImage}>
-              <Feather name="edit-2" size={18} color={themed.secondary} />
+              <Switch 
+                value={darkMode} 
+                onValueChange={setDarkMode}
+                trackColor={{ false: "#D1D5DB", true: "#246BFD" }}
+                thumbColor={darkMode ? "#fff" : "#f4f3f4"}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setShowSettings(false)}
+            >
+              <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={[styles.name, { color: themed.text, fontSize: 28, marginTop: 10, marginBottom: 0 }]}> {userData?.firstName || 'Utilisateur'} {userData?.lastName || ''} </Text>
-        <Text style={[styles.username, { color: darkMode ? 'rgba(255,255,255,0.7)' : 'rgba(36,107,253,0.7)', fontSize: 17, marginBottom: 4 }]}>@{userData?.username || auth.currentUser?.email?.split('@')[0]}</Text>
-        <Text style={{ color: themed.text, fontSize: 13, marginTop: 2, opacity: 0.7, fontStyle: 'italic' }}></Text>
-      </View>
-      <View style={[styles.card, { backgroundColor: themed.card, shadowColor: themed.secondary, borderWidth: 1, borderColor: themed.border, marginTop: -48, marginBottom: 32 }]}> 
-        {/* Settings Modal */}
-        <Modal
-          visible={showSettings}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowSettings(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Settings</Text>
-              <TouchableOpacity style={styles.settingItem} onPress={() => setDarkMode(d => !d)}>
-                <Ionicons name={darkMode ? 'moon' : 'moon-outline'} size={20} color={themed.secondary} />
-                <Text style={[styles.settingLabel, { color: themed.text }]}>Dark Mode {darkMode ? '(On)' : '(Off)'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="notifications-outline" size={20} color={themed.secondary} />
-                <Text style={[styles.settingLabel, { color: themed.text }]}>Notifications</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="lock-closed-outline" size={20} color={themed.secondary} />
-                <Text style={[styles.settingLabel, { color: themed.text }]}>Change Password</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="language-outline" size={20} color={themed.secondary} />
-                <Text style={[styles.settingLabel, { color: themed.text }]}>Language</Text>
-              </TouchableOpacity>
-              <Pressable style={styles.closeBtn} onPress={() => setShowSettings(false)}>
-                <Text style={styles.closeBtnText}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
-        <TouchableOpacity style={[styles.row, { borderBottomColor: themed.border }]} onPress={() => setShowDetails(!showDetails)}>
-          <Ionicons name="person-circle-outline" size={24} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Informations personnelles</Text>
-          <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={22} color={themed.secondary} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
-        {showDetails && (
-          <View style={[styles.detailsBox, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]}> 
-            <Text style={styles.detail}><Text style={styles.detailLabel}>Email:</Text> malak@email.com</Text>
-            <Text style={styles.detail}><Text style={styles.detailLabel}>Téléphone:</Text> +212 600 000 000</Text>
-            <Text style={styles.detail}><Text style={styles.detailLabel}>Ville:</Text> Casablanca, Maroc</Text>
-          </View>
-        )}
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]} onPress={() => setShowSettings(true)}>
-          <Ionicons name="settings-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Paramètres</Text>
-          <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
-        {/* <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row }]} onPress={() => navigation.navigate('Favorites')}> */}
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]} onPress={() => navigation.navigate('LikedPlaces')}>
-          <Ionicons name="star-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Favoris</Text>
-          <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.rowBtn, { backgroundColor: themed.row, borderColor: themed.border, borderWidth: 1 }]}> 
-          <Ionicons name="help-circle-outline" size={22} color={themed.secondary} />
-          <Text style={[styles.rowLabel, { color: themed.text }]}>Aide & Support</Text>
-          <Ionicons name="chevron-forward" size={20} color={themed.secondary} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: themed.logout, shadowColor: themed.logout, marginTop: 30, marginBottom: 10, borderRadius: 22, paddingVertical: 18, paddingHorizontal: 48 }]} onPress={handleLogout}>
-        <Feather name="log-out" size={22} color="#fff" />
-        <Text style={styles.logoutText}>Déconnexion</Text>
-      </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
 
+/* ================= COMPONENT ================= */
+const ProfileRow = ({ icon, label, onPress }: any) => (
+  <TouchableOpacity style={styles.row} onPress={onPress}>
+    <Ionicons name={icon} size={22} color="#246BFD" />
+    <Text style={styles.rowText}>{label}</Text>
+    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+  </TouchableOpacity>
+);
+
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#F4F7FE',
-    alignItems: 'center',
-    paddingBottom: 40,
-  },
-  headerBg: {
+  headerBackground: {
     width: '100%',
-    backgroundColor: '#246BFD',
+  },
+  header: {
+    paddingTop: 60,
+    paddingBottom: 40,
+    alignItems: "center",
+  },
+  settingsIconBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
-    paddingTop: 80,
-    paddingBottom: 44,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    marginBottom: 28,
-    shadowColor: '#246BFD',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 10,
+    justifyContent: 'center',
   },
-  avatarShadow: {
-    shadowColor: '#1a2340',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 12,
-    borderRadius: 60,
-    marginBottom: 10,
+  avatarWrapper: {
+    width: 140,
+    height: 140,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  avatarBorder: {
+  glow: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderWidth: 4,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    borderColor: "rgba(255,255,255,0.3)",
   },
-  avatar: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-  },
-  editBtn: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 7,
-    shadowColor: '#246BFD',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6,
+  cameraBtn: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   name: {
-    fontSize: 24,
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 4,
+  },
+  username: {
+    fontSize: 15,
+    color: "rgba(255,255,255,0.8)",
+    marginBottom: 24,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  statNumber: {
+    fontSize: 22,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 2,
-    marginTop: 2,
-    letterSpacing: 0.5,
   },
-  username: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 10,
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
-  card: {
-    width: '92%',
-    backgroundColor: '#fff',
-    borderRadius: 32,
-    padding: 20,
-    marginTop: -38,
-    marginBottom: 28,
-    shadowColor: '#246BFD',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F2',
+  menuContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 12,
   },
-  rowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
+  menuCard: {
     borderRadius: 16,
-    marginTop: 8,
-    backgroundColor: '#F4F7FE',
-    paddingHorizontal: 8,
-    shadowColor: '#246BFD',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  rowLabel: {
-    fontSize: 17,
-    color: '#231934',
-    fontWeight: '600',
-    marginLeft: 18,
-    letterSpacing: 0.2,
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
   },
-  detailsBox: {
-    backgroundColor: '#F4F7FE',
+  menuIconWrapper: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    padding: 12,
-    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  detail: {
-    fontSize: 15,
-    color: '#231934',
-    marginBottom: 4,
+  menuTextContainer: {
+    flex: 1,
+    marginLeft: 16,
   },
-  detailLabel: {
-    color: '#246BFD',
-    fontWeight: '700',
+  menuLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  menuSubtext: {
+    fontSize: 13,
   },
   logoutBtn: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 40,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#FF4B4B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  logoutGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF4B4B',
-    borderRadius: 18,
+    justifyContent: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 40,
-    marginTop: 18,
-    alignSelf: 'center',
-    shadowColor: '#FF4B4B',
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 6,
+    gap: 10,
   },
   logoutText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-    marginLeft: 10,
-    letterSpacing: 0.5,
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
   },
-  // Modal styles
+  glassCard: {
+    marginTop: -40,
+    marginHorizontal: 20,
+    borderRadius: 28,
+    padding: 20,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 18,
+  },
+  rowText: {
+    flex: 1,
+    marginLeft: 16,
+    fontSize: 16,
+    fontWeight: "600",
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modalContent: {
-    width: '85%',
-    backgroundColor: '#fff',
-    borderRadius: 28,
+  modal: {
+    width: "85%",
+    borderRadius: 24,
     padding: 28,
-    alignItems: 'flex-start',
-    shadowColor: '#246BFD',
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#246BFD',
-    marginBottom: 18,
-    alignSelf: 'center',
-    width: '100%',
-    textAlign: 'center',
-  },
-  settingItem: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F2',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
   },
-  settingLabel: {
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  switchLabel: {
     fontSize: 16,
-    color: '#231934',
-    marginLeft: 16,
-    fontWeight: '500',
+    fontWeight: "600",
   },
   closeBtn: {
-    alignSelf: 'center',
-    marginTop: 18,
-    backgroundColor: '#246BFD',
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 32,
+    backgroundColor: "#246BFD",
+    paddingVertical: 14,
+    borderRadius: 12,
   },
-  closeBtnText: {
-    color: '#fff',
+  closeText: {
+    color: "#fff",
+    fontWeight: "700",
+    textAlign: "center",
     fontSize: 16,
-    fontWeight: '700',
   },
 });

@@ -1,14 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Dimensions, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SwipeListView } from 'react-native-swipe-list-view';
-import PlaceCard from '../components/PlaceCard';
-import SearchBar from '../components/SearchBar';
 import { auth, db } from '../firebase/firebase';
 import { Place } from '../navigation/types';
-import colors from '../theme/colors';
 
 
 
@@ -17,6 +15,8 @@ const MyPostsScreen: React.FC = () => {
   const [posts, setPosts] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'name'>('recent');
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -49,6 +49,8 @@ const MyPostsScreen: React.FC = () => {
           city: data.city || '',
           openingHours: data.openingHours || '',
           address: data.address || '',
+          amenities: data.amenities ?? [],
+          priceRange: data.priceRange ?? 'Not specified',
         };
       });
       setPosts(myPosts);
@@ -85,23 +87,52 @@ const MyPostsScreen: React.FC = () => {
   const openEditModal = (post: Place) => {
     setEditPost(post);
     setEditTitle(post.name);
-    setEditDesc(post.description);
+    setEditDesc(post.description || '');
     setEditModalVisible(true);
   };
 
-  const saveEdit = () => {
-    if (!editPost) return;
-    setPosts(posts.map(p => p.id === editPost.id ? { ...p, name: editTitle, description: editDesc } : p));
-    setEditModalVisible(false);
+  const saveEdit = async () => {
+    if (!editPost || !editPost.id) return;
+    
+    try {
+      // Update Firestore
+      await updateDoc(doc(db, 'spots', editPost.id), {
+        name: editTitle,
+        description: editDesc,
+      });
+      
+      // Update local state
+      setPosts(posts.map(p => p.id === editPost.id ? { ...p, name: editTitle, description: editDesc } : p));
+      setEditModalVisible(false);
+      Alert.alert('Success', 'Post updated successfully!');
+    } catch (e) {
+      console.log('Error updating post:', e);
+      Alert.alert('Error', 'Failed to update the post.');
+    }
   };
 
   if (loading) return <SafeAreaView style={styles.safe}><Text style={styles.loadingText}>Loading...</Text></SafeAreaView>;
 
-  // Filter posts by search only
-  const filteredPosts = posts.filter((post) => {
-    const searchLower = search.toLowerCase();
-    return post.name.toLowerCase().includes(searchLower) || (post.category && post.category.toLowerCase().includes(searchLower));
-  });
+  // Filter and sort posts
+  const filteredPosts = posts
+    .filter((post) => {
+      const searchLower = search.toLowerCase();
+      return post.name.toLowerCase().includes(searchLower) || (post.category && post.category.toLowerCase().includes(searchLower));
+    })
+    .sort((a, b) => {
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      return 0; // 'recent' - keep original order
+    });
+
+  // Calculate stats
+  const totalPosts = posts.length;
+  const avgRating = posts.length > 0 
+    ? (posts.reduce((sum, p) => sum + (p.rating || 0), 0) / posts.length).toFixed(1)
+    : '0.0';
+  const topRatedPost = posts.length > 0 
+    ? posts.reduce((max, p) => (p.rating || 0) > (max.rating || 0) ? p : max, posts[0])
+    : null;
 
   let emptyMessage = '';
   if (!auth.currentUser) {
@@ -110,53 +141,248 @@ const MyPostsScreen: React.FC = () => {
     emptyMessage = 'No posts found. Try adding a new spot!';
   }
 
+  // Header component for list
+  const ListHeaderComponent = () => (
+    <>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.hi}>My Posts</Text>
+          <Text style={styles.subtitle}>Manage your shared places</Text>
+        </View>
+        <TouchableOpacity style={styles.menuBtn}>
+          <Ionicons name="settings-outline" size={24} color="#1A1A2E" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Stats Cards */}
+      {posts.length > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <LinearGradient
+              colors={['#1A1A2E', '#2A2A3E']}
+              style={styles.statGradient}
+            >
+              <Ionicons name="location" size={24} color="#ffffffff" />
+              <Text style={styles.statNumber}>{totalPosts}</Text>
+              <Text style={styles.statLabel}>Total Posts</Text>
+            </LinearGradient>
+          </View>
+
+          <View style={styles.statCard}>
+            <LinearGradient
+              colors={['#246BFD', '#1E5FE0']}
+              style={styles.statGradient}
+            >
+              <Ionicons name="star" size={24} color="#ffffffff" />
+              <Text style={styles.statNumber}>{avgRating}</Text>
+              <Text style={styles.statLabel}>Avg Rating</Text>
+            </LinearGradient>
+          </View>
+
+          <View style={styles.statCard}>
+            <LinearGradient
+              colors={['#FF6B9D', '#E85A8D']}
+              style={styles.statGradient}
+            >
+              <Ionicons name="trophy" size={24} color="#ffffffff" />
+              <Text style={styles.statNumber}>{topRatedPost ? topRatedPost.rating?.toFixed(1) : '0'}</Text>
+              <Text style={styles.statLabel}>Top Rated</Text>
+            </LinearGradient>
+          </View>
+        </View>
+      )}
+
+      {/* Search and Controls */}
+      <View style={styles.controlsSection}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="rgba(26,26,46,0.4)" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search your posts..."
+            placeholderTextColor="rgba(26,26,46,0.4)"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={20} color="rgba(26,26,46,0.4)" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.controlsRow}>
+          <View style={styles.sortContainer}>
+            <TouchableOpacity 
+              style={[styles.sortBtn, sortBy === 'recent' && styles.sortBtnActive]}
+              onPress={() => setSortBy('recent')}
+            >
+              <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextActive]}>Recent</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.sortBtn, sortBy === 'rating' && styles.sortBtnActive]}
+              onPress={() => setSortBy('rating')}
+            >
+              <Text style={[styles.sortText, sortBy === 'rating' && styles.sortTextActive]}>Rating</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.sortBtn, sortBy === 'name' && styles.sortBtnActive]}
+              onPress={() => setSortBy('name')}
+            >
+              <Text style={[styles.sortText, sortBy === 'name' && styles.sortTextActive]}>Name</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.viewModeContainer}>
+            <TouchableOpacity 
+              style={[styles.viewModeBtn, viewMode === 'grid' && styles.viewModeBtnActive]}
+              onPress={() => setViewMode('grid')}
+            >
+              <Ionicons name="grid" size={20} color={viewMode === 'grid' ? '#fff' : '#1A1A2E'} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.viewModeBtn, viewMode === 'list' && styles.viewModeBtnActive]}
+              onPress={() => setViewMode('list')}
+            >
+              <Ionicons name="list" size={20} color={viewMode === 'list' ? '#fff' : '#1A1A2E'} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" backgroundColor="#fff" />
-      <View style={styles.header}>
-        <Text style={styles.hi}>My posts</Text>
-        <Text style={styles.subtitle}>Edit your posts</Text>
-      </View>
-      <View style={styles.container}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          onFilterPress={() => {}}
+      <StatusBar style="dark" backgroundColor="#E8ECF4" />
+
+      {/* Posts List/Grid */}
+      {filteredPosts.length === 0 ? (
+        <ScrollView contentContainerStyle={{ flex: 1 }}>
+          <ListHeaderComponent />
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="location-outline" size={80} color="rgba(26,26,46,0.2)" />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {!auth.currentUser 
+                ? 'Please Log In' 
+                : posts.length === 0 
+                  ? 'No Posts Yet' 
+                  : 'No Results Found'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {!auth.currentUser
+                ? 'You must be logged in to see your posts.'
+                : posts.length === 0
+                  ? 'Start sharing amazing places with the community!'
+                  : 'Try adjusting your search terms.'}
+            </Text>
+          </View>
+        </ScrollView>
+      ) : viewMode === 'grid' ? (
+        <FlatList
+          ListHeaderComponent={ListHeaderComponent}
+          data={filteredPosts}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          renderItem={({ item: post }) => (
+            <TouchableOpacity 
+              style={styles.gridItem}
+              activeOpacity={0.9}
+              onLongPress={() => openEditModal(post)}
+            >
+              <Image 
+                source={post.image} 
+                style={styles.gridImage}
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(26,26,46,0.9)']}
+                style={styles.gridOverlay}
+              >
+                <View style={styles.gridContent}>
+                  <Text style={styles.gridTitle} numberOfLines={1}>{post.name}</Text>
+                  <View style={styles.gridFooter}>
+                    <View style={styles.gridRating}>
+                      <Ionicons name="star" size={14} color="#FFD700" />
+                      <Text style={styles.gridRatingText}>{post.rating?.toFixed(1) || '0.0'}</Text>
+                    </View>
+                    <View style={styles.gridActions}>
+                      <TouchableOpacity 
+                        style={styles.gridActionBtn}
+                        onPress={() => openEditModal(post)}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#246BFD" />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.gridActionBtn}
+                        onPress={() => handleDelete(post.id)}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#FF6B9D" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.gridContainer}
+          showsVerticalScrollIndicator={false}
         />
+      ) : (
         <SwipeListView
+          ListHeaderComponent={ListHeaderComponent}
           data={filteredPosts}
           keyExtractor={(item: Place) => item.id}
           renderItem={({ item }: { item: Place }) => (
-            <Animated.View style={styles.cardWrapper}>
-              <PlaceCard
-                image={item.image}
-                name={item.name}
-                city={item.category}
-                rating={item.rating}
-                favorite={false}
-                onFavoritePress={() => {}}
+            <View style={styles.listItem}>
+              <Image 
+                source={item.image} 
+                style={styles.listImage}
               />
-            </Animated.View>
+              <View style={styles.listContent}>
+                <Text style={styles.listTitle} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.listCategory} numberOfLines={1}>{item.category || item.city}</Text>
+                <View style={styles.listFooter}>
+                  <View style={styles.listRating}>
+                    <Ionicons name="star" size={14} color="#FFD700" />
+                    <Text style={styles.listRatingText}>{item.rating?.toFixed(1) || '0.0'}</Text>
+                  </View>
+                  <View style={styles.listBadge}>
+                    <Ionicons name="location" size={12} color="#246BFD" />
+                    <Text style={styles.listBadgeText}>{item.city || 'Unknown'}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           )}
           renderHiddenItem={({ item }: { item: Place }) => (
             <View style={styles.rowBack}>
-              <TouchableOpacity style={[styles.backRightBtn, styles.backRightBtnLeft]} onPress={() => openEditModal(item)}>
-                <Ionicons name="create-outline" size={24} color={colors.primary} />
+              <TouchableOpacity 
+                style={[styles.backBtn, styles.backBtnEdit]} 
+                onPress={() => openEditModal(item)}
+              >
+                <Ionicons name="create-outline" size={24} color="#fff" />
+                <Text style={styles.backBtnText}>Edit</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.backRightBtn, styles.backRightBtnRight]} onPress={() => handleDelete(item.id)}>
-                <Ionicons name="trash-outline" size={24} color="#e74c3c" />
+              <TouchableOpacity 
+                style={[styles.backBtn, styles.backBtnDelete]} 
+                onPress={() => handleDelete(item.id)}
+              >
+                <Ionicons name="trash-outline" size={24} color="#fff" />
+                <Text style={styles.backBtnText}>Delete</Text>
               </TouchableOpacity>
             </View>
           )}
-          rightOpenValue={-120}
+          rightOpenValue={-160}
           disableRightSwipe
-          contentContainerStyle={filteredPosts.length === 0 ? { flex: 1, justifyContent: 'center' } : {}}
-          ListEmptyComponent={<Text style={styles.emptyText}>{emptyMessage}</Text>}
-          style={{ marginTop: 12, marginBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
         />
-      </View>
+      )}
 
-      {/* Modal d'édition */}
+      {/* Edit Modal */}
       <Modal
         visible={editModalVisible}
         animationType="slide"
@@ -165,31 +391,53 @@ const MyPostsScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit your post</Text>
-            <TextInput
-              style={styles.input}
-              value={editTitle}
-              onChangeText={setEditTitle}
-              placeholder="Title"
-              placeholderTextColor="#aaa"
-              autoFocus
-            />
-            <TextInput
-              style={[styles.input, { height: 80 }]}
-              value={editDesc}
-              onChangeText={setEditDesc}
-              placeholder="Description"
-              placeholderTextColor="#aaa"
-              multiline
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.saveBtn} onPress={saveEdit}>
-                <Ionicons name="checkmark" size={22} color="#fff" />
-                <Text style={styles.saveBtnText}>Save</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Post</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#1A1A2E" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#fff" />
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Place Name</Text>
+              <TextInput
+                style={styles.input}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Enter place name"
+                placeholderTextColor="rgba(26,26,46,0.4)"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={editDesc}
+                onChangeText={setEditDesc}
+                placeholder="Enter description"
+                placeholderTextColor="rgba(26,26,46,0.4)"
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalCancelBtn} 
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalSaveBtn} 
+                onPress={saveEdit}
+              >
+                <Ionicons name="checkmark" size={20} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.modalSaveText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -203,173 +451,453 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: '#E8ECF4',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 12,
-    backgroundColor: colors.white,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   hi: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.darkText,
+    fontSize: 32,
+    fontWeight: '600',
+    color: '#1A1A2E',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 17,
-    color: colors.darkText,
-    opacity: 0.7,
-    marginBottom: 10,
+    fontSize: 15,
+    color: 'rgba(26,26,46,0.6)',
+  },
+  menuBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   loadingText: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: 18,
-    color: colors.primary,
+    color: '#1A1A2E',
   },
-  emptyText: {
-    textAlign: 'center',
-    color: '#888',
-    marginTop: 32,
-    fontSize: 16,
+
+  // Stats Cards
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 20,
+    gap: 12,
   },
-  modalActions: {
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statGradient: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+  },
+
+  // Controls Section
+  controlsSection: {
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1A1A2E',
+  },
+  controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 18,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  cancelBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  rowBack: {
     alignItems: 'center',
-    backgroundColor: '#F7F7FA',
-    flex: 1,
+  },
+  sortContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingRight: 16,
-    marginBottom: 18,
-    borderRadius: 20,
-  },
-  backRightBtn: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'relative',
-    top: 0,
-    width: 56,
-    height: 80,
-    marginLeft: 8,
-    borderRadius: 16,
-  },
-  backRightBtnLeft: {
-    backgroundColor: '#F4F7FE',
-  },
-  backRightBtnRight: {
-    backgroundColor: '#FDECEC',
-  },
-  container: { flex: 1, backgroundColor: '#F7F7FA', padding: 16 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 18, color: colors.primary, letterSpacing: 1, alignSelf: 'center', marginTop: 18 },
-  // categoryScroll removed
-  cardsScroll: {
-    marginTop: 12,
-    marginBottom: 24,
-    flexDirection: 'column',
-    gap: 18,
-    },
-    cardWrapper: {
-      width: '100%',
-      alignSelf: 'center',
-      marginBottom: 18,
-    },
-  cardCreative: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 18,
-    marginBottom: 18,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.13,
-    shadowRadius: 16,
-    elevation: 4,
-    borderWidth: 1.5,
-    borderColor: '#F0F0FF',
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
   },
-  postImage: {
-    width: width * 0.22,
-    height: width * 0.22,
+  sortBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  sortBtnActive: {
+    backgroundColor: '#1A1A2E',
+  },
+  sortText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1A1A2E',
+  },
+  sortTextActive: {
+    color: '#fff',
+  },
+  viewModeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  viewModeBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  viewModeBtnActive: {
+    backgroundColor: '#1A1A2E',
+  },
+
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(26,26,46,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#1A1A2E',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 15,
+    color: 'rgba(26,26,46,0.5)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  // Grid View
+  gridContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  gridItem: {
+    width: (width - 60) / 2,
+    height: 200,
     borderRadius: 16,
-    backgroundColor: '#EEE',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  postTitle: { fontSize: 20, fontWeight: 'bold', color: colors.primary, marginBottom: 2 },
-  postDesc: { fontSize: 15, color: '#555', marginTop: 2, marginBottom: 2 },
-  postDate: { fontSize: 13, color: '#aaa', marginTop: 2 },
-  actionsCreative: { flexDirection: 'row', marginTop: 10 },
-  actionBtnCreative: { marginRight: 16, backgroundColor: '#F4F7FE', borderRadius: 8, padding: 8 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  gridOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  gridContent: {
+    padding: 12,
+  },
+  gridTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  gridFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gridRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  gridRatingText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  gridActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  gridActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // List View
+  listItem: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    marginHorizontal: 24,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  listImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  listContent: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'space-between',
+  },
+  listTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A2E',
+    marginBottom: 4,
+  },
+  listCategory: {
+    fontSize: 13,
+    color: 'rgba(26,26,46,0.5)',
+    marginBottom: 8,
+  },
+  listFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  listRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  listRatingText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1A1A2E',
+  },
+  listBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8ECF4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  listBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#246BFD',
+  },
+
+  // Swipe Actions
+  rowBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+    paddingRight: 24,
+    marginBottom: 12,
+  },
+  backBtn: {
+    width: 70,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  backBtnEdit: {
+    backgroundColor: '#246BFD',
+  },
+  backBtnDelete: {
+    backgroundColor: '#FF6B9D',
+  },
+  backBtnText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+
+  // Edit Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(26,26,46,0.4)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: width * 0.88,
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     elevation: 8,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 18,
-    alignSelf: 'center',
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E8ECF4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A2E',
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#F7F7FA',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#222',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1A1A2E',
     borderWidth: 1,
-    borderColor: '#eee',
-    marginBottom: 12,
+    borderColor: 'rgba(26,26,46,0.1)',
   },
-  saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
   },
-  cancelBtn: {
+  modalActions: {
     flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: '#E8ECF4',
     alignItems: 'center',
-    backgroundColor: '#aaa',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: '#1A1A2E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

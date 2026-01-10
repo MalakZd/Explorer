@@ -5,13 +5,13 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import {
-  Image,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Image,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -84,7 +84,7 @@ export default function LoginScreen() {
       {/* EMAIL */}
       <Text style={styles.label}>Email</Text>
       <View style={styles.inputWrapperRow}>
-        <Feather name="mail" size={20} color="#246BFD" style={styles.inputIcon} />
+        <Feather name="mail" size={20} color="#1A1A2E" style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Enter your email"
@@ -99,7 +99,7 @@ export default function LoginScreen() {
       {/* PASSWORD */}
       <Text style={styles.label}>Password</Text>
       <View style={styles.inputWrapperRow}>
-        <Feather name="lock" size={20} color="#246BFD" style={styles.inputIcon} />
+        <Feather name="lock" size={20} color="#1A1A2E" style={styles.inputIcon} />
 
         <TextInput
           style={styles.input}
@@ -114,7 +114,7 @@ export default function LoginScreen() {
           <Ionicons
             name={showPassword ? "eye-outline" : "eye-off-outline"}
             size={20}
-            color="#246BFD"
+            color="#1A1A2E"
           />
         </TouchableOpacity>
       </View>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
 
   forgot: {
-    color: "#246BFD",
+    color: "#1A1A2E",
     fontWeight: "600",
   },
 
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#246BFD",
+    backgroundColor: "#1A1A2E",
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
 
   signupLink: {
-    color: "#246BFD",
+    color: "#1A1A2E",
     fontWeight: "600",
   },
 });
