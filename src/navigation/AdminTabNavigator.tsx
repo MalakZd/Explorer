@@ -22,14 +22,14 @@ export default function AdminTabNavigator() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarStyle: {
-          backgroundColor: '#1A1A2E',
+          backgroundColor: '#ffffffff',
           borderTopWidth: 0,
           height: 70,
           borderTopLeftRadius: 40,
           borderTopRightRadius: 40,
         },
-        tabBarActiveTintColor: '#246BFD',
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.5)',
+        tabBarActiveTintColor: '#0a214eff',
+        tabBarInactiveTintColor: 'rgba(93, 93, 93, 0.5)',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',

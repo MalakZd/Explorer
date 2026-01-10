@@ -67,17 +67,17 @@ export default function ProfileScreen() {
           setProfileImage(snap.data().photoURL || null);
         }
 
-        // Charger les statistiques
+      
         await loadStats(user.uid);
       };
       loadProfile();
     }, [])
   );
 
-  // Charger les statistiques
+
   const loadStats = async (userId: string) => {
     try {
-      // Compter les posts
+    
       const postsQuery = query(
         collection(db, 'spots'),
         where('createdBy', '==', userId)
@@ -85,7 +85,6 @@ export default function ProfileScreen() {
       const postsSnapshot = await getDocs(postsQuery);
       setPostsCount(postsSnapshot.size);
 
-      // Calculer le rating moyen des posts
       let totalRating = 0;
       let ratedPosts = 0;
       postsSnapshot.docs.forEach(doc => {
@@ -97,7 +96,7 @@ export default function ProfileScreen() {
       });
       setAvgRating(ratedPosts > 0 ? totalRating / ratedPosts : 0);
 
-      // Compter les favoris
+    
       const likesQuery = query(
         collection(db, 'likes'),
         where('userId', '==', userId)
@@ -113,7 +112,7 @@ export default function ProfileScreen() {
     AsyncStorage.setItem("darkMode", JSON.stringify(darkMode));
   }, [darkMode]);
 
-  /* ================= IMAGE ================= */
+
   const pickProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -130,7 +129,7 @@ export default function ProfileScreen() {
     if (!result.canceled) {
       setLoadingImage(true);
       try {
-        // Stocker directement l'URI locale (comme pour les spots)
+     
         const photoUri = result.assets[0].uri;
         console.log('Photo sélectionnée:', photoUri);
         
@@ -140,7 +139,7 @@ export default function ProfileScreen() {
         });
         console.log('Photo sauvegardée dans Firestore');
         
-        // Recharger immédiatement les données
+     
         const snap = await getDoc(doc(db, "users", auth.currentUser!.uid));
         if (snap.exists()) {
           setProfileImage(snap.data().photoURL || null);
