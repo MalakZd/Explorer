@@ -4,6 +4,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimes
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Image, Linking, Modal, PanResponder, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, db } from '../firebase/firebase';
+import { notifyPostOwner } from '../firebase/notificationService';
 import { RootStackParamList } from '../navigation/types';
 
 const { width, height } = Dimensions.get('window');
@@ -159,6 +160,12 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           createdAt: serverTimestamp(),
         });
         setIsFavorite(true);
+        
+        // Envoyer notification au propriétaire du post
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        const userName = userData?.firstName || 'Someone';
+        await notifyPostOwner(place.id, 'like', userName);
       }
     } catch (error) {
       console.error('Error handling favorite:', error);
@@ -281,6 +288,10 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         createdAt: new Date(),
       };
       setComments([newComment, ...comments]);
+      
+      // Envoyer notification au propriétaire du post
+      await notifyPostOwner(place.id, 'comment', userData?.firstName || 'Someone', comment);
+      
       setComment("");
     } catch (error) {
       console.error('Error adding comment:', error);

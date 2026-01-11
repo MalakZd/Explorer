@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
@@ -6,12 +8,15 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SwipeListView } from 'react-native-swipe-list-view';
 import { auth, db } from '../firebase/firebase';
-import { Place } from '../navigation/types';
+import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
+import { Place, RootStackParamList } from '../navigation/types';
 
 
 
 
 const MyPostsScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const unreadCount = useUnreadNotifications();
   const [posts, setPosts] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -150,8 +155,16 @@ const MyPostsScreen: React.FC = () => {
           <Text style={styles.hi}>My Posts</Text>
           <Text style={styles.subtitle}>Manage your shared places</Text>
         </View>
-        <TouchableOpacity style={styles.menuBtn}>
-          <Ionicons name="settings-outline" size={24} color="#1A1A2E" />
+        <TouchableOpacity 
+          style={styles.menuBtn}
+          onPress={() => navigation.navigate('Notifications')}
+        >
+          <Ionicons name="notifications-outline" size={24} color="#1A1A2E" />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -898,6 +911,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

@@ -76,7 +76,7 @@ export default function LoginScreen() {
       <Text style={styles.subtitle}>Let's login for explore continues</Text>
 
       <Image
-        source={require("../../assets/images/logoblack.jpg")}
+        source={require("../../assets/images/Logoblack.png")}
         style={styles.logoImg}
         resizeMode="contain"
       />
@@ -154,7 +154,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#ccc5e137",
     padding: 24,
     justifyContent: "center",
   },

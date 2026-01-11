@@ -18,7 +18,7 @@ const slides = [
     text: 'Connect with locals and explore cafés, viewpoints, and secret spots together',
   },
   {
-    image: require('../../assets/images/photos.jpg'),
+    image: require('../../assets/images/Earth.jpg'),
     text: 'Save your favorite places and explore the city like a true local',
   },
 ];
@@ -157,24 +157,27 @@ export default function OnboardingScreen() {
           scrollEnabled={index !== slides.length - 1 || !showLogin}
         />
         <View style={styles.overlay} pointerEvents={index === slides.length - 1 ? 'box-none' : 'auto'}>
-          <View style={styles.paginationWrapper}>
-            {slides.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, index === i && styles.dotActive]}
-              />
-            ))}
-          </View>
-          {index < slides.length - 1 ? (
-            <View style={styles.bottomRow}>
-              <TouchableOpacity onPress={handleGetStarted}>
-                <Text style={styles.skip}>Skip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleNext}>
-                <Text style={styles.next}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {index < slides.length - 1 && (
+            <>
+              <View style={styles.paginationWrapper}>
+                {slides.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.dot, index === i && styles.dotActive]}
+                  />
+                ))}
+              </View>
+              <View style={styles.bottomRow}>
+                <TouchableOpacity onPress={handleGetStarted}>
+                  <Text style={styles.skip}>Skip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleNext}>
+                  <Text style={styles.next}>Next</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+          {index === slides.length - 1 && (
             <View 
               style={styles.swipeUpContainer} 
               {...panResponder.panHandlers}
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 30,
     left: 0,
     right: 0,
     padding: 24,

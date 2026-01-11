@@ -35,4 +35,5 @@ export type RootStackParamList = {
   LikedPlaces: undefined;
   Admin: undefined;
   AccountInfo: undefined;
+  Notifications: undefined;
 };

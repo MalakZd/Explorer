@@ -5,9 +5,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import ProfileScreen from '../screens/ProfileScreen';
+import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
 import colors from '../theme/colors';
 import HomeStackNavigator from './HomeStackNavigator';
+import ProfileStackNavigator from './ProfileStackNavigator';
 import { RootStackParamList } from './types';
 let ExplorerScreen;
 if (Platform.OS === 'web') {
@@ -38,7 +39,10 @@ const AddButton = (props: any) => {
 
 const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: colors.white }} />;
 
-const BottomTabNavigator: React.FC = () => (
+const BottomTabNavigator: React.FC = () => {
+  const unreadCount = useUnreadNotifications();
+  
+  return (
   <View style={{ flex: 1, position: 'relative' }}>
     
   {/* TALMNB3D UN9ADU */}
@@ -97,17 +101,23 @@ const BottomTabNavigator: React.FC = () => (
       />
       <Tab.Screen name="MyPosts" component={require('../screens/MyPostsScreen').default} options={{
         tabBarIcon: ({ focused }) => (
-          <View style={{ alignItems: 'center' }}>
+          <View style={{ alignItems: 'center', position: 'relative' }}>
             <Ionicons name="albums-outline" size={26} color={focused ? '#1A1A2E' : '#383860ff'} />
+            {unreadCount > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
             {focused && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A1A2E', marginTop: 4 }} />}
           </View>
         ),
         tabBarLabel: 'Mes posts',
       }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   addBtnContainer: {
@@ -146,6 +156,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 60,
     borderTopRightRadius: 60,
     opacity: 0.85,
+  },
+  tabBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#FF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  tabBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
 

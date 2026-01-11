@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -102,21 +102,42 @@ export default function AccountInfoScreen() {
     setSaving(true);
     try {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        Alert.alert('Error', 'No user logged in');
+        setSaving(false);
+        return;
+      }
 
-      await updateDoc(doc(db, 'users', user.uid), {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      const dataToSave = {
         firstName: userData.firstName.trim(),
         lastName: userData.lastName.trim(),
+        email: userData.email.trim() || user.email || '',
         phone: userData.phone.trim(),
         username: userData.username.trim(),
         bio: userData.bio.trim(),
-      });
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (userDoc.exists()) {
+        // Document exists, update it
+        await updateDoc(userDocRef, dataToSave);
+      } else {
+        // Document doesn't exist, create it
+        await setDoc(userDocRef, {
+          ...dataToSave,
+          createdAt: new Date().toISOString(),
+          uid: user.uid,
+        });
+      }
 
       Alert.alert('Success', 'Account information updated successfully');
       setIsEditing(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving user data:', error);
-      Alert.alert('Error', 'Failed to update account information');
+      Alert.alert('Error', error.message || 'Failed to update account information');
     } finally {
       setSaving(false);
     }
