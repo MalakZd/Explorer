@@ -339,7 +339,7 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             <View style={styles.headerLeft}>
               <Text style={[styles.placeName, { color: theme.text }]}>{place.name}</Text>
               <View style={styles.locationRow}>
-                <Ionicons name="location" size={16} color="#001d58ff" />
+                <Ionicons name="location" size={16} color={theme.text === '#FFFFFF' ? '#246BFD' : '#001d58ff'} />
                 <Text style={[styles.locationText, { color: theme.sub }]}>{place.city}</Text>
               </View>
             </View>
@@ -359,8 +359,8 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               <View style={styles.amenitiesRow}>
                 {displayAmenities.map((amenity, idx) => (
                   <View key={idx} style={styles.amenityItem}>
-                    <Ionicons name={amenity.icon as any} size={24} color="#1A1A2E" />
-                    <Text style={styles.amenityLabel}>{amenity.label}</Text>
+                    <Ionicons name={amenity.icon as any} size={24} color={theme.text} />
+                    <Text style={[styles.amenityLabel, { color: theme.sub }]}>{amenity.label}</Text>
                   </View>
                 ))}
               </View>
@@ -378,26 +378,26 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Additional Info */}
           {place.address && (
             <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={20} color="#666" />
-              <Text style={styles.infoText}>{place.address}</Text>
+              <Ionicons name="location-outline" size={20} color={theme.sub} />
+              <Text style={[styles.infoText, { color: theme.sub }]}>{place.address}</Text>
             </View>
           )}
           {place.openingHours && (
             <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={20} color="#666" />
-              <Text style={styles.infoText}>{place.openingHours}</Text>
+              <Ionicons name="time-outline" size={20} color={theme.sub} />
+              <Text style={[styles.infoText, { color: theme.sub }]}>{place.openingHours}</Text>
             </View>
           )}
 
           {/* Rating Section */}
-          <View style={styles.ratingSection}>
-            <Text style={styles.sectionTitle}>Rate this place</Text>
+          <View style={[styles.ratingSection, { backgroundColor: theme.text === '#FFFFFF' ? 'rgba(255,255,255,0.1)' : '#F8F9FA' }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Rate this place</Text>
             
             {/* Average Rating Display */}
             {totalRatings > 0 && (
               <View style={styles.averageRatingInfo}>
                 <Ionicons name="people" size={16} color="#246BFD" />
-                <Text style={styles.averageRatingText}>
+                <Text style={[styles.averageRatingText, { color: theme.text }]}>
                   Average: {averageRating.toFixed(1)}/5 ({totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})
                 </Text>
               </View>
@@ -428,14 +428,14 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.sectionTitle}>Comments</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Comments</Text>
             {loadingComments ? (
-              <ActivityIndicator size="small" color="#001642ff" style={{ marginVertical: 20 }} />
+              <ActivityIndicator size="small" color={theme.accent} style={{ marginVertical: 20 }} />
             ) : comments.length === 0 ? (
-              <Text style={styles.noComments}>No comments yet. Be the first to share your experience!</Text>
+              <Text style={[styles.noComments, { color: theme.sub }]}>No comments yet. Be the first to share your experience!</Text>
             ) : (
               comments.map((c) => (
-                <View key={c.id} style={styles.commentBubble}>
+                <View key={c.id} style={[styles.commentBubble, { backgroundColor: theme.text === '#FFFFFF' ? 'rgba(255,255,255,0.1)' : 'rgba(26,26,46,0.1)' }]}>
                   <View style={styles.commentHeader}>
                     {c.userPhoto ? (
                       <Image source={{ uri: c.userPhoto }} style={styles.commentAvatar} />
@@ -444,9 +444,9 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
                         <Ionicons name="person" size={16} color="#246BFD" />
                       </View>
                     )}
-                    <Text style={styles.commentUserName}>{c.userName}</Text>
+                    <Text style={[styles.commentUserName, { color: theme.text === '#FFFFFF' ? '#fff' : '#246BFD' }]}>{c.userName}</Text>
                   </View>
-                  <Text style={styles.commentText}>{c.text}</Text>
+                  <Text style={[styles.commentText, { color: theme.text }]}>{c.text}</Text>
                 </View>
               ))
             )}
@@ -454,11 +454,11 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             {/* Comment Input */}
             <View style={styles.commentInputRow}>
               <TextInput
-                style={styles.commentInput}
+                style={[styles.commentInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
                 value={comment}
                 onChangeText={setComment}
                 placeholder="Share your experience..."
-                placeholderTextColor="rgba(26,26,46,0.4)"
+                placeholderTextColor={theme.sub}
               />
               <TouchableOpacity style={styles.sendBtn} onPress={handleAddComment}>
                 <Ionicons name="send" size={20} color="#fff" />

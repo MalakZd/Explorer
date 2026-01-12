@@ -339,7 +339,7 @@ const HomeScreen: React.FC = () => {
             style={styles.menuBtn}
             onPress={() => setShowSearchModal(true)}
           >
-            <Ionicons name="search" size={24} color={theme.text} />
+            <Ionicons name="search" size={24} color="#1A1A2E" />
           </TouchableOpacity>
         </View>
 

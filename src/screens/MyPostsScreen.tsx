@@ -161,7 +161,7 @@ const MyPostsScreen: React.FC = () => {
           style={styles.menuBtn}
           onPress={() => navigation.navigate('Notifications')}
         >
-          <Ionicons name="notifications-outline" size={24} color={theme.text} />
+          <Ionicons name="notifications-outline" size={24} color="#1A1A2E" />
           {unreadCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>

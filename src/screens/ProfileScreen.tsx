@@ -175,7 +175,7 @@ export default function ProfileScreen() {
           end={{ x: 0, y: 1 }}
         >
         <TouchableOpacity style={styles.settingsIconBtn} onPress={() => setShowSettings(true)}>
-          <Ionicons name="settings-outline" size={24} color="#fff" />
+          <Ionicons name="settings-outline" size={24} color={theme.text === '#FFFFFF' ? '#1A1A2E' : '#fff'} />
         </TouchableOpacity>
 
         <View style={styles.avatarWrapper}>

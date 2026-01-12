@@ -136,7 +136,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={[styles.header, { backgroundColor: theme.cardBg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
+          <Ionicons name="arrow-back" size={24} color="#1A1A2E" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
         <View style={{ width: 40 }} />
