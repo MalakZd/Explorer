@@ -4,6 +4,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, ImageBackground, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SearchBar from '../components/SearchBar';
+import { useTheme } from '../context/ThemeContext';
 import { db } from '../firebase/firebase';
 
 const { width } = Dimensions.get('window');
@@ -14,6 +15,7 @@ function normalize(str: string) {
 }
 
 function ExplorerScreen() {
+  const { theme } = useTheme();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [markers, setMarkers] = useState<any[]>([]);

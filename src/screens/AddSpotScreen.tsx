@@ -5,8 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
-import { Animated, Easing, Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, Image, ImageBackground, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 import { RootStackParamList } from '../navigation/types';
 
@@ -23,6 +24,7 @@ const availableAmenities = [
 
 export default function AddSpotScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>('');
@@ -147,25 +149,35 @@ export default function AddSpotScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#E8ECF4' }}>
+    <ImageBackground
+      source={require('../../assets/images/photos.jpg')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
       <LinearGradient
-        colors={['#1A1A2E', '#E8ECF4']}
-        style={styles.headerGradient}
+        colors={['rgba(0, 0, 0, 0.21)', 'rgba(0, 37, 111, 0.53)', 'rgba(0, 0, 0, 0.54)']}
+        style={{ flex: 1 }}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Add a New Spot</Text>
-        <Text style={styles.subtitle}>Share your hidden gem with the community</Text>
-      </LinearGradient>
+        <LinearGradient
+          colors={['#000000', '#05122e08']}
+          style={styles.headerGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Add a New Spot</Text>
+          <Text style={styles.subtitle}>Share your hidden gem with the community</Text>
+        </LinearGradient>
       
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="images" size={20} color="#246BFD" />
-            <Text style={styles.sectionTitle}>Photos</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Photos</Text>
           </View>
           <Text style={styles.helpText}>Add at least one photo to showcase this place</Text>
           <View style={styles.photosRow}>
@@ -200,23 +212,23 @@ export default function AddSpotScreen() {
           )}
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="create" size={20} color="#246BFD" />
-            <Text style={styles.sectionTitle}>Basic Info</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Basic Info</Text>
           </View>
-          <Text style={styles.label}>Spot Name *</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Spot Name *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
             placeholder="Enter spot name"
-            placeholderTextColor="#B0B0B0"
+            placeholderTextColor={theme.sub}
             value={spotName}
             onChangeText={setSpotName}
           />
 
-          <Text style={styles.label}>Category *</Text>
-          <TouchableOpacity style={styles.inputRow} onPress={() => setShowCategoryList(!showCategoryList)}>
-            <Text style={[styles.inputText, { color: category ? '#1A1A2E' : '#B0B0B0' }]}>
+          <Text style={[styles.label, { color: theme.text }]}>Category *</Text>
+          <TouchableOpacity style={[styles.inputRow, { backgroundColor: theme.inputBg, borderColor: theme.border }]} onPress={() => setShowCategoryList(!showCategoryList)}>
+            <Text style={[styles.inputText, { color: category ? theme.text : theme.sub }]}>
               {category || 'Select a category'}
             </Text>
             <Ionicons name={showCategoryList ? 'chevron-up' : 'chevron-down'} size={20} color="#246BFD" />
@@ -435,7 +447,8 @@ export default function AddSpotScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+      </LinearGradient>
+    </ImageBackground>
   );
 }
 
@@ -468,16 +481,18 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#246BFD',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   sectionTitle: {
     fontSize: 18,
@@ -573,23 +588,33 @@ const styles = StyleSheet.create({
     color: '#1A1A2E',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
-    borderRadius: 12,
-    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#E3F2FD',
+    borderRadius: 14,
+    padding: 16,
     fontSize: 15,
     color: '#1A1A2E',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#246BFD',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
-    borderRadius: 12,
-    padding: 14,
-    backgroundColor: '#F8F9FA',
+    borderWidth: 1.5,
+    borderColor: '#E3F2FD',
+    borderRadius: 14,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#246BFD',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputText: {
     fontSize: 15,

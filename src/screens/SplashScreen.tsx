@@ -13,7 +13,7 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('Onboarding');
-    }, 3000);
+    }, 8000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -31,7 +31,7 @@ export default function SplashScreen() {
       >
         <View style={styles.centered}>
           <Image 
-            source={require('../../assets/images/Frame 1000000903.png')} 
+            source={require('../../assets/images/logo-white.png')} 
             style={styles.mainImage} 
             resizeMode="contain" 
           />
@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   mainImage: {
-    width: width * 0.35,
-    height: height * 0.2,
-    maxWidth: 180,
-    maxHeight: 180,
+    width: width * 0.5,
+    height: height * 0.3,
+    maxWidth: 250,
+    maxHeight: 250,
   },
   tagline: {
     color: '#fff',

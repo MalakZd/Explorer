@@ -7,6 +7,7 @@ import { collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from 
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SwipeListView } from 'react-native-swipe-list-view';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
 import { Place, RootStackParamList } from '../navigation/types';
@@ -16,6 +17,7 @@ import { Place, RootStackParamList } from '../navigation/types';
 
 const MyPostsScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
   const unreadCount = useUnreadNotifications();
   const [posts, setPosts] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,14 +154,14 @@ const MyPostsScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.hi}>My Posts</Text>
-          <Text style={styles.subtitle}>Manage your shared places</Text>
+          <Text style={[styles.hi, { color: theme.text }]}>My Posts</Text>
+          <Text style={[styles.subtitle, { color: theme.sub }]}>Manage your shared places</Text>
         </View>
         <TouchableOpacity 
           style={styles.menuBtn}
           onPress={() => navigation.navigate('Notifications')}
         >
-          <Ionicons name="notifications-outline" size={24} color="#1A1A2E" />
+          <Ionicons name="notifications-outline" size={24} color={theme.text} />
           {unreadCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -266,8 +268,8 @@ const MyPostsScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" backgroundColor="#E8ECF4" />
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
+      <StatusBar style="dark" backgroundColor={theme.bg} />
 
       {/* Posts List/Grid */}
       {filteredPosts.length === 0 ? (
@@ -275,7 +277,7 @@ const MyPostsScreen: React.FC = () => {
           <ListHeaderComponent />
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="location-outline" size={80} color="rgba(26,26,46,0.2)" />
+              <Ionicons name="location-outline" size={80} color={theme.sub} />
             </View>
             <Text style={styles.emptyTitle}>
               {!auth.currentUser 

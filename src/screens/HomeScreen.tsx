@@ -6,22 +6,23 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import {
-  Dimensions,
-  Image,
-  ImageBackground,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 
 import { HomeStackParamList } from '../navigation/HomeStackNavigator';
@@ -51,6 +52,7 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { theme } = useTheme();
 
   // 🔹 STATES
   const [search, setSearch] = useState('');
@@ -325,19 +327,19 @@ const HomeScreen: React.FC = () => {
   // 🔹 UI
   // =========================
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Popular</Text>
-            <Text style={styles.titleSecond}>destination</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Popular</Text>
+            <Text style={[styles.titleSecond, { color: theme.text }]}>destination</Text>
           </View>
           <TouchableOpacity 
             style={styles.menuBtn}
             onPress={() => setShowSearchModal(true)}
           >
-            <Ionicons name="search" size={24} color="#1A1A2E" />
+            <Ionicons name="search" size={24} color={theme.text} />
           </TouchableOpacity>
         </View>
 

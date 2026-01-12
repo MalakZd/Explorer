@@ -5,11 +5,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 import { Place, RootStackParamList } from '../navigation/types';
 
 export default function LikedPlacesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
   const [likedPlaces, setLikedPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +87,7 @@ export default function LikedPlacesScreen() {
     }
   };
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Gradient Header */}
       <LinearGradient
         colors={['#1A1A2E', '#000000ff']}
@@ -106,15 +108,15 @@ export default function LikedPlacesScreen() {
       {loading ? (
         <View style={styles.emptyBox}>
           <ActivityIndicator size="large" color="#246BFD" />
-          <Text style={styles.emptyText}>Loading your favorites...</Text>
+          <Text style={[styles.emptyText, { color: theme.text }]}>Loading your favorites...</Text>
         </View>
       ) : likedPlaces.length === 0 ? (
         <View style={styles.emptyBox}>
           <View style={styles.emptyIconWrapper}>
             <Ionicons name="heart-dislike-outline" size={64} color="#246BFD" />
           </View>
-          <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-          <Text style={styles.emptyText}>Start exploring and save your favorite places!</Text>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>No Favorites Yet</Text>
+          <Text style={[styles.emptyText, { color: theme.sub }]}>Start exploring and save your favorite places!</Text>
         </View>
       ) : (
         <FlatList
@@ -122,7 +124,7 @@ export default function LikedPlacesScreen() {
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={styles.card}
+              style={[styles.card, { backgroundColor: theme.cardBg }]}
               activeOpacity={0.85}
               onPress={() => navigation.navigate('PlaceDetails', { place: item })}
             >
@@ -134,14 +136,14 @@ export default function LikedPlacesScreen() {
                 </View>
               )}
               <View style={styles.infoBox}>
-                <Text style={styles.placeName} numberOfLines={1}>{item.name}</Text>
+                <Text style={[styles.placeName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
                 <View style={styles.rowInfo}>
                   <Ionicons name="location" size={14} color="#246BFD" />
-                  <Text style={styles.placeLocation} numberOfLines={1}>{item.city}</Text>
+                  <Text style={[styles.placeLocation, { color: theme.sub }]} numberOfLines={1}>{item.city}</Text>
                 </View>
                 <View style={styles.rowInfo}>
                   <Ionicons name="star" size={14} color="#FFD700" />
-                  <Text style={styles.placeRating}>{item.rating.toFixed(1)}</Text>
+                  <Text style={[styles.placeRating, { color: theme.text }]}>{item.rating.toFixed(1)}</Text>
                   {item.priceRange && item.priceRange !== 'Not specified' && (
                     <>
                       <View style={styles.dot} />

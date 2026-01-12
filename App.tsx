@@ -1,6 +1,7 @@
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { useCurrentUserRole } from './src/hooks/useCurrentUserRole';
 import AdminTabNavigator from './src/navigation/AdminTabNavigator';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
@@ -25,7 +26,8 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
       {role === 'admin' ? (
         <AdminTabNavigator />
       ) : (
@@ -45,6 +47,7 @@ export default function App() {
 
         </Stack.Navigator>
       )}
-    </NavigationContainer>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }

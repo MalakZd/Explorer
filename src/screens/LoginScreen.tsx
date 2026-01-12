@@ -5,13 +5,13 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import {
-    Image,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -174,8 +174,8 @@ const styles = StyleSheet.create({
   },
 
   logoImg: {
-    width: 180,
-    height: 60,
+    width: 240,
+    height: 80,
     alignSelf: "center",
     marginBottom: 32,
   },

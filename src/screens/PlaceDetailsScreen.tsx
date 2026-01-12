@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Image, Linking, Modal, PanResponder, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 import { notifyPostOwner } from '../firebase/notificationService';
 import { RootStackParamList } from '../navigation/types';
@@ -33,6 +34,7 @@ const amenitiesMap: { [key: string]: { icon: string; label: string } } = {
 
 const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { place } = route.params;
+  const { theme } = useTheme();
   const [isFavorite, setIsFavorite] = useState(false);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<SpotComment[]>([]);
@@ -301,7 +303,7 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const pricePerNight = Math.floor((place.rating || 4) * 20 + 50);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Modal pour afficher la photo en grand */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
@@ -331,14 +333,14 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         </TouchableOpacity>
 
         {/* Content Card */}
-        <View style={styles.contentCard}>
+        <View style={[styles.contentCard, { backgroundColor: theme.cardBg }]}>
           {/* Place Name & Location */}
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <Text style={styles.placeName}>{place.name}</Text>
+              <Text style={[styles.placeName, { color: theme.text }]}>{place.name}</Text>
               <View style={styles.locationRow}>
                 <Ionicons name="location" size={16} color="#001d58ff" />
-                <Text style={styles.locationText}>{place.city}</Text>
+                <Text style={[styles.locationText, { color: theme.sub }]}>{place.city}</Text>
               </View>
             </View>
             <View style={styles.priceContainer}>
@@ -353,7 +355,7 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* What we offer */}
           {displayAmenities.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>What we offer</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>What we offer</Text>
               <View style={styles.amenitiesRow}>
                 {displayAmenities.map((amenity, idx) => (
                   <View key={idx} style={styles.amenityItem}>
@@ -368,8 +370,8 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Description */}
           {place.description && (
             <>
-              <Text style={styles.sectionTitle}>About</Text>
-              <Text style={styles.description}>{place.description}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>About</Text>
+              <Text style={[styles.description, { color: theme.sub }]}>{place.description}</Text>
             </>
           )}
 

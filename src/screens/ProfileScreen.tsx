@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,15 +18,16 @@ import {
   View,
 } from "react-native";
 
+import { useTheme } from "../context/ThemeContext";
 import { logoutUser } from "../firebase/authService";
 import { auth, db } from "../firebase/firebase";
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+  const { darkMode, setDarkMode, theme } = useTheme();
 
   const [userData, setUserData] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
@@ -47,9 +47,6 @@ export default function ProfileScreen() {
         setUserData(snap.data());
         setProfileImage(snap.data().photoURL || null);
       }
-
-      const dm = await AsyncStorage.getItem("darkMode");
-      if (dm) setDarkMode(JSON.parse(dm));
     };
     load();
   }, []);
@@ -108,11 +105,6 @@ export default function ProfileScreen() {
     }
   };
 
-  useEffect(() => {
-    AsyncStorage.setItem("darkMode", JSON.stringify(darkMode));
-  }, [darkMode]);
-
-
   const pickProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -129,7 +121,6 @@ export default function ProfileScreen() {
     if (!result.canceled) {
       setLoadingImage(true);
       try {
-     
         const photoUri = result.assets[0].uri;
         console.log('Photo sélectionnée:', photoUri);
         
@@ -139,7 +130,6 @@ export default function ProfileScreen() {
         });
         console.log('Photo sauvegardée dans Firestore');
         
-     
         const snap = await getDoc(doc(db, "users", auth.currentUser!.uid));
         if (snap.exists()) {
           setProfileImage(snap.data().photoURL || null);
@@ -166,17 +156,6 @@ export default function ProfileScreen() {
         },
       },
     ]);
-  };
-
-  /* ================= THEME ================= */
-  const theme = {
-    bg: darkMode ? "#0E0F14" : "#E8ECF4",
-    glass: darkMode ? "rgba(30,32,40,0.85)" : "#FFFFFF",
-    text: darkMode ? "#FFFFFF" : "#1A1A2E",
-    sub: darkMode ? "#A1A7B3" : "#7A7A7A",
-    accent: "#246BFD",
-    danger: "#FF4B4B",
-    cardBg: darkMode ? "rgba(30,32,40,0.6)" : "#FFFFFF",
   };
 
   /* ================= UI ================= */

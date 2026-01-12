@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { collection, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { FlatList, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
 import { RootStackParamList } from '../navigation/types';
 
@@ -20,6 +21,7 @@ interface Notification {
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSortModal, setShowSortModal] = useState(false);
@@ -107,7 +109,7 @@ export default function NotificationsScreen() {
 
   const renderNotification = ({ item }: { item: Notification }) => (
     <TouchableOpacity
-      style={[styles.notificationCard, !item.read && styles.unreadCard]}
+      style={[styles.notificationCard, { backgroundColor: theme.cardBg }, !item.read && styles.unreadCard]}
       onPress={() => {
         markAsRead(item.id);
         // Navigate to post details if needed
@@ -121,45 +123,45 @@ export default function NotificationsScreen() {
       </View>
 
       <View style={styles.notificationContent}>
-        <Text style={styles.notificationTitle}>{item.type === 'like' ? 'New Like' : 'New Comment'}</Text>
-        <Text style={styles.notificationMessage} numberOfLines={2}>
+        <Text style={[styles.notificationTitle, { color: theme.text }]}>{item.type === 'like' ? 'New Like' : 'New Comment'}</Text>
+        <Text style={[styles.notificationMessage, { color: theme.sub }]} numberOfLines={2}>
           {item.message}
         </Text>
-        <Text style={styles.notificationTime}>{getTimeAgo(item.timestamp)}</Text>
+        <Text style={[styles.notificationTime, { color: theme.sub }]}>{getTimeAgo(item.timestamp)}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+      <View style={[styles.header, { backgroundColor: theme.cardBg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1A1A2E" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Latest notification</Text>
+      <View style={[styles.sectionHeader, { backgroundColor: theme.cardBg }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Latest notification</Text>
         <TouchableOpacity 
           style={styles.sortButton}
           onPress={() => setShowSortModal(true)}
         >
-          <Text style={styles.sortText}>Sort By</Text>
-          <Ionicons name="chevron-down" size={16} color="#666" />
+          <Text style={[styles.sortText, { color: theme.sub }]}>Sort By</Text>
+          <Ionicons name="chevron-down" size={16} color={theme.sub} />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.loadingText}>Loading notifications...</Text>
+          <Text style={[styles.loadingText, { color: theme.text }]}>Loading notifications...</Text>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No notifications yet</Text>
-          <Text style={styles.emptySubtext}>You'll be notified when someone interacts with your posts</Text>
+          <Ionicons name="notifications-off-outline" size={64} color={theme.sub} />
+          <Text style={[styles.emptyText, { color: theme.text }]}>No notifications yet</Text>
+          <Text style={[styles.emptySubtext, { color: theme.sub }]}>You'll be notified when someone interacts with your posts</Text>
         </View>
       ) : (
         <FlatList
@@ -183,8 +185,8 @@ export default function NotificationsScreen() {
           activeOpacity={1}
           onPress={() => setShowSortModal(false)}
         >
-          <View style={styles.sortModal}>
-            <Text style={styles.sortModalTitle}>Sort By</Text>
+          <View style={[styles.sortModal, { backgroundColor: theme.cardBg }]}>
+            <Text style={[styles.sortModalTitle, { color: theme.text }]}>Sort By</Text>
             
             <TouchableOpacity
               style={styles.sortOption}
@@ -193,7 +195,7 @@ export default function NotificationsScreen() {
                 setShowSortModal(false);
               }}
             >
-              <Text style={styles.sortOptionText}>Newest First</Text>
+              <Text style={[styles.sortOptionText, { color: theme.text }]}>Newest First</Text>
               <View style={[styles.radioOuter, sortOption === 'newest' && styles.radioSelected]}>
                 {sortOption === 'newest' && <View style={styles.radioInner} />}
               </View>
@@ -206,7 +208,7 @@ export default function NotificationsScreen() {
                 setShowSortModal(false);
               }}
             >
-              <Text style={styles.sortOptionText}>Older First</Text>
+              <Text style={[styles.sortOptionText, { color: theme.text }]}>Older First</Text>
               <View style={[styles.radioOuter, sortOption === 'oldest' && styles.radioSelected]}>
                 {sortOption === 'oldest' && <View style={styles.radioInner} />}
               </View>
@@ -219,7 +221,7 @@ export default function NotificationsScreen() {
                 setShowSortModal(false);
               }}
             >
-              <Text style={styles.sortOptionText}>Read Notification</Text>
+              <Text style={[styles.sortOptionText, { color: theme.text }]}>Read Notification</Text>
               <View style={[styles.radioOuter, sortOption === 'read' && styles.radioSelected]}>
                 {sortOption === 'read' && <View style={styles.radioInner} />}
               </View>
@@ -232,7 +234,7 @@ export default function NotificationsScreen() {
                 setShowSortModal(false);
               }}
             >
-              <Text style={styles.sortOptionText}>Unread Notification</Text>
+              <Text style={[styles.sortOptionText, { color: theme.text }]}>Unread Notification</Text>
               <View style={[styles.radioOuter, sortOption === 'unread' && styles.radioSelected]}>
                 {sortOption === 'unread' && <View style={styles.radioInner} />}
               </View>
