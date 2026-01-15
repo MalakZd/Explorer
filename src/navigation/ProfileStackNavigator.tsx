@@ -2,10 +2,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
 import AccountInfoScreen from '../screens/AccountInfoScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import SecurityScreen from '../screens/SecurityScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   AccountInfo: undefined;
+  Security: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -19,6 +21,7 @@ const ProfileStackNavigator: React.FC = () => {
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
       <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
+      <Stack.Screen name="Security" component={SecurityScreen} />
     </Stack.Navigator>
   );
 };

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { useCurrentUserRole } from './src/hooks/useCurrentUserRole';
-import AdminTabNavigator from './src/navigation/AdminTabNavigator';
+import AdminStackNavigator from './src/navigation/AdminStackNavigator';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import { RootStackParamList } from './src/navigation/types';
 import AccountCreatedScreen from './src/screens/AccountCreatedScreen';
@@ -29,7 +29,7 @@ export default function App() {
     <ThemeProvider>
       <NavigationContainer>
       {role === 'admin' ? (
-        <AdminTabNavigator />
+        <AdminStackNavigator />
       ) : (
         <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Splash" component={SplashScreen} />

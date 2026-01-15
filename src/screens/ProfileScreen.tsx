@@ -5,17 +5,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ImageBackground,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { useTheme } from "../context/ThemeContext";
@@ -269,6 +269,22 @@ export default function ProfileScreen() {
             <View style={styles.menuTextContainer}>
               <Text style={[styles.menuLabel, { color: theme.text }]}>Account Info</Text>
               <Text style={[styles.menuSubtext, { color: theme.sub }]}>Personal information</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.menuCard, { backgroundColor: theme.cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Security')}
+          >
+            <View style={[styles.menuIconWrapper, { backgroundColor: '#E1F5FE' }]}>
+              <Ionicons name="shield-checkmark" size={22} color="#03A9F4" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuLabel, { color: theme.text }]}>Security</Text>
+              <Text style={[styles.menuSubtext, { color: theme.sub }]}>Change password</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.accent} />
           </TouchableOpacity>
