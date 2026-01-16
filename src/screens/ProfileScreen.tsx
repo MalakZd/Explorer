@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, onSnapshot, query, updateDoc, where } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -74,7 +74,7 @@ export default function ProfileScreen() {
 
   const loadStats = async (userId: string) => {
     try {
-    
+      // Charger les posts (utiliser un snapshot pour les ratings)
       const postsQuery = query(
         collection(db, 'spots'),
         where('createdBy', '==', userId)
@@ -93,17 +93,28 @@ export default function ProfileScreen() {
       });
       setAvgRating(ratedPosts > 0 ? totalRating / ratedPosts : 0);
 
-    
-      const likesQuery = query(
-        collection(db, 'likes'),
-        where('userId', '==', userId)
-      );
-      const likesSnapshot = await getDocs(likesQuery);
-      setFavoritesCount(likesSnapshot.size);
+      // Pour les likes, on utilise un listener en temps réel (voir useEffect ci-dessous)
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
+
+  // Listener en temps réel pour les likes
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const likesQuery = query(
+      collection(db, 'likes'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(likesQuery, (snapshot) => {
+      setFavoritesCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const pickProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

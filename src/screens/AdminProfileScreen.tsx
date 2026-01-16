@@ -167,7 +167,7 @@ const AdminProfileScreen = () => {
               <Text style={styles.infoValue}>
                 {adminData?.createdAt
                   ? new Date(adminData.createdAt).toLocaleDateString("fr-FR")
-                  : "Non disponible"}
+                  : "Non disponible"} 
               </Text>
             </View>
           </View>

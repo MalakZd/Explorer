@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase/firebase';
@@ -18,6 +18,13 @@ export default function LikedPlacesScreen() {
   useEffect(() => {
     loadLikedPlaces();
   }, []);
+
+  // Recharger quand on revient sur l'écran
+  useFocusEffect(
+    useCallback(() => {
+      loadLikedPlaces();
+    }, [])
+  );
 
   const loadLikedPlaces = async () => {
     const user = auth.currentUser;

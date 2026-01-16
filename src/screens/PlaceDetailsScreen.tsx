@@ -154,6 +154,7 @@ const PlaceDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           await deleteDoc(doc(db, 'likes', docSnapshot.id));
         });
         setIsFavorite(false);
+        // Le listener en temps réel dans ProfileScreen mettra à jour le compteur automatiquement
       } else {
         // Like: ajouter à Firestore
         await addDoc(collection(db, 'likes'), {
