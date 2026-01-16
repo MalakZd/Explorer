@@ -109,8 +109,27 @@ export default function ProfileScreen() {
       where('userId', '==', user.uid)
     );
 
-    const unsubscribe = onSnapshot(likesQuery, (snapshot) => {
-      setFavoritesCount(snapshot.size);
+    const unsubscribe = onSnapshot(likesQuery, async (snapshot) => {
+      // Vérifier que les spots existent réellement
+      let validLikesCount = 0;
+      
+      for (const likeDoc of snapshot.docs) {
+        const spotId = likeDoc.data().spotId;
+        try {
+          const spotDocRef = doc(db, 'spots', spotId);
+          const spotDoc = await getDoc(spotDocRef);
+          
+          // Ne compter que si le spot existe et est accessible
+          if (spotDoc.exists()) {
+            validLikesCount++;
+          }
+        } catch (error) {
+          // Spot non accessible, ne pas compter
+          console.log('Spot not accessible:', spotId);
+        }
+      }
+      
+      setFavoritesCount(validLikesCount);
     });
 
     return () => unsubscribe();

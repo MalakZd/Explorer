@@ -29,11 +29,13 @@ export default function LikedPlacesScreen() {
   const loadLikedPlaces = async () => {
     const user = auth.currentUser;
     if (!user) {
+      setLikedPlaces([]);
       setLoading(false);
       return;
     }
 
     try {
+      setLoading(true);
       console.log('Loading likes for user:', user.uid);
       
       // Récupérer tous les likes de l'utilisateur
@@ -43,6 +45,13 @@ export default function LikedPlacesScreen() {
       );
       const likesSnapshot = await getDocs(likesQuery);
       console.log('Likes found:', likesSnapshot.size);
+
+      // Si aucun like, mettre à jour immédiatement
+      if (likesSnapshot.empty) {
+        setLikedPlaces([]);
+        setLoading(false);
+        return;
+      }
 
       // Récupérer les détails de chaque spot liké
       const places: Place[] = [];
@@ -89,6 +98,7 @@ export default function LikedPlacesScreen() {
       setLikedPlaces(places);
     } catch (error) {
       console.error('Error loading liked places:', error);
+      setLikedPlaces([]);
     } finally {
       setLoading(false);
     }
